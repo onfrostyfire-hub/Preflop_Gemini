@@ -41,27 +41,39 @@ def show():
     ranges_db = utils.load_ranges()
     if not ranges_db: st.error("База ренджей пуста. Проверь папку spots_data."); return
 
-    with st.expander("⚙️ Settings", expanded=False):
+    scenario_map = {}
+    for src, sc_dict in ranges_db.items():
+        for sc, sp_dict in sc_dict.items():
+            if sc not in scenario_map: scenario_map[sc] = []
+            for sp in sp_dict.keys():
+                scenario_map[sc].append((sp, f"{src}|{sc}|{sp}"))
+                
+    all_scenarios = sorted(list(scenario_map.keys()))
+
+    with st.expander("⚙️ Настройки Фильтров", expanded=False):
         saved = utils.load_user_settings()
         
-        all_src = list(ranges_db.keys())
-        saved_src = [s for s in saved.get("sources", []) if s in all_src]
-        sel_src = st.multiselect("Source", all_src, default=saved_src if saved_src else (all_src[:1] if all_src else []))
+        saved_sc = [s for s in saved.get("scenarios", []) if s in all_scenarios]
+        sel_sc = st.multiselect("Сценарий", all_scenarios, default=saved_sc if saved_sc else (all_scenarios[:1] if all_scenarios else []))
         
-        avail_sc = set()
-        for s in sel_src: avail_sc.update(ranges_db[s].keys())
-        avail_sc = sorted(list(avail_sc))
+        sel_spots_keys = []
+        if sel_sc:
+            st.markdown("**Споты для тренировки:**")
+            saved_spots = saved.get("spots", [])
+            for sc in sel_sc:
+                st.markdown(f"<div style='color:#ffc107; font-size:14px; font-weight:bold; margin-top:8px;'>{sc}</div>", unsafe_allow_html=True)
+                for sp_name, sp_key in scenario_map[sc]:
+                    is_checked = (sp_key in saved_spots) if "spots" in saved else True
+                    if st.checkbox(sp_name, value=is_checked, key=f"m_chk_{sp_key}"):
+                        sel_spots_keys.append(sp_key)
         
-        saved_sc = [sc for sc in saved.get("scenarios", []) if sc in avail_sc]
-        sel_sc = st.multiselect("Scenario", avail_sc, default=saved_sc if saved_sc else (avail_sc[:1] if avail_sc else []))
-        
-        if st.button("🚀 Apply"):
-            utils.save_user_settings({"sources": sel_src, "scenarios": sel_sc})
+        if st.button("🚀 Применить", use_container_width=True):
+            utils.save_user_settings({"scenarios": sel_sc, "spots": sel_spots_keys})
             st.session_state.hand = None; st.rerun()
 
-    pool = utils.get_filtered_pool(ranges_db, sel_src, sel_sc)
+    pool = sel_spots_keys
     if not pool:
-        st.warning("⚠️ Нет раздач для выбранных фильтров.")
+        st.warning("⚠️ Не выбран ни один спот. Открой '⚙️ Настройки Фильтров' и поставь галочки.")
         st.stop()
 
     if 'hand' not in st.session_state: st.session_state.hand = None
@@ -72,7 +84,7 @@ def show():
     if 'msg' not in st.session_state: st.session_state.msg = None
     if 'current_spot_key' not in st.session_state: st.session_state.current_spot_key = None 
 
-    if st.session_state.hand is None or st.session_state.current_spot_key is None:
+    if st.session_state.hand is None or st.session_state.current_spot_key is None or st.session_state.current_spot_key not in pool:
         chosen = random.choice(pool)
         st.session_state.current_spot_key = chosen
         src, sc, sp = chosen.split('|')
@@ -117,36 +129,22 @@ def show():
     c2 = "suit-red" if s2 in '♥' else "suit-blue" if s2 in '♦' else "suit-black"
 
     order = ["EP", "MP", "CO", "BTN", "SB", "BB"]
-    try:
-        hero_idx = order.index(hero_pos)
-    except ValueError:
-        hero_idx = 0
+    try: hero_idx = order.index(hero_pos)
+    except ValueError: hero_idx = 0
         
     rot = order[hero_idx:] + order[:hero_idx]
 
     def get_seat_style(idx):
-        return {0: "bottom: -20px; left: 50%; transform: translateX(-50%);", 
-                1: "bottom: 15%; left: 0%;", 
-                2: "top: 15%; left: 0%;", 
-                3: "top: -20px; left: 50%; transform: translateX(-50%);", 
-                4: "top: 15%; right: 0%;", 
-                5: "bottom: 15%; right: 0%;"}.get(idx, "")
+        return {0: "bottom: -20px; left: 50%; transform: translateX(-50%);", 1: "bottom: 15%; left: 0%;", 2: "top: 15%; left: 0%;", 
+                3: "top: -20px; left: 50%; transform: translateX(-50%);", 4: "top: 15%; right: 0%;", 5: "bottom: 15%; right: 0%;"}.get(idx, "")
 
     def get_chip_style(idx):
-        return {0: "bottom: 25%; left: 50%; transform: translateX(-50%);",
-                1: "bottom: 22%; left: 22%;",
-                2: "top: 22%; left: 22%;",
-                3: "top: 25%; left: 50%; transform: translateX(-50%);",
-                4: "top: 22%; right: 22%;",
-                5: "bottom: 22%; right: 22%;"}.get(idx, "")
+        return {0: "bottom: 25%; left: 50%; transform: translateX(-50%);", 1: "bottom: 22%; left: 22%;", 2: "top: 22%; left: 22%;",
+                3: "top: 25%; left: 50%; transform: translateX(-50%);", 4: "top: 22%; right: 22%;", 5: "bottom: 22%; right: 22%;"}.get(idx, "")
 
     def get_btn_style(idx):
-        return {0: "bottom: 10%; left: 60%;",
-                1: "bottom: 25%; left: 16%;",
-                2: "top: 10%; left: 16%;",
-                3: "top: 10%; left: 60%;",
-                4: "top: 10%; right: 16%;",
-                5: "bottom: 25%; right: 16%;"}.get(idx, "")
+        return {0: "bottom: 10%; left: 60%;", 1: "bottom: 25%; left: 16%;", 2: "top: 10%; left: 16%;",
+                3: "top: 10%; left: 60%;", 4: "top: 10%; right: 16%;", 5: "bottom: 25%; right: 16%;"}.get(idx, "")
 
     opp_html = ""; chips_html = ""
 
