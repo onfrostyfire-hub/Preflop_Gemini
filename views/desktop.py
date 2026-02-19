@@ -4,7 +4,6 @@ from datetime import datetime
 import utils
 
 def show():
-    # --- CSS ---
     st.markdown("""
     <style>
         .stApp { background-color: #212529; color: #e9ecef; }
@@ -17,8 +16,6 @@ def show():
         .seat-active { border-color: #ffc107; background: #343a40; }
         .seat-folded { opacity: 0.4; border-color: #212529; }
         .opp-cards { position: absolute; top: -12px; width: 34px; height: 48px; background: #fff; border-radius: 4px; border: 1px solid #ccc; background-image: repeating-linear-gradient(45deg, #b71c1c 0, #b71c1c 2px, #fff 2px, #fff 4px); z-index: 20; box-shadow: 1px 1px 4px rgba(0,0,0,0.8); }
-        .pos-1 { bottom: 20%; left: 10%; } .pos-2 { top: 20%; left: 10%; } .pos-3 { top: -30px; left: 50%; transform: translateX(-50%); } 
-        .pos-4 { top: 20%; right: 10%; } .pos-5 { bottom: 20%; right: 10%; }
         .chip-container { position: absolute; z-index: 10; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
         .poker-chip { width: 22px; height: 22px; background: #222; border: 3px dashed #d32f2f; border-radius: 50%; box-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
         .chip-3bet { width: 24px; height: 24px; background: #d32f2f; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.6); }
@@ -45,13 +42,10 @@ def show():
     with st.sidebar:
         st.header("Настройки фильтров")
         saved = utils.load_user_settings()
-        
         sel_src = st.multiselect("Источник (Source)", list(ranges_db.keys()), default=saved.get("sources", [list(ranges_db.keys())[0]]))
-        
         avail_sc = set()
         for s in sel_src: avail_sc.update(ranges_db[s].keys())
         avail_sc = sorted(list(avail_sc))
-        
         sel_sc = st.multiselect("Сценарий (Scenario)", avail_sc, default=saved.get("scenarios", [avail_sc[0]] if avail_sc else []))
         
         if st.button("Применить"):
@@ -59,7 +53,6 @@ def show():
             st.session_state.hand = None; st.rerun()
 
     pool = utils.get_filtered_pool(ranges_db, sel_src, sel_sc)
-
     if not pool:
         st.warning("⚠️ Нет раздач для выбранных фильтров. Выбери другой сценарий.")
         st.stop()
@@ -98,14 +91,12 @@ def show():
     villain_bet = setup.get("villain_bet")
     
     is_defense = villain_pos is not None
-    
     rng = st.session_state.rng
     correct_act = "FOLD"
     
     if is_defense:
         w_c = utils.get_weight(st.session_state.hand, ranges_data.get("call", ""))
         w_raise = utils.get_weight(st.session_state.hand, ranges_data.get("4bet", ranges_data.get("3bet", "")))
-        
         if rng < w_raise: correct_act = "RAISE"
         elif rng < (w_raise + w_c): correct_act = "CALL"
     else:
@@ -127,40 +118,59 @@ def show():
             
         rot = order[hero_idx:] + order[:hero_idx]
 
-        opp_html = ""; chips_html = ""
-        def get_pos_style(idx):
-            return {0: "bottom:28%;left:47%;", 1: "bottom:28%;left:22%;", 2: "top:28%;left:22%;", 
-                    3: "top:15%;left:47%;", 4: "top:28%;right:22%;", 5: "bottom:28%;right:22%;"}.get(idx, "")
+        def get_seat_style(idx):
+            return {0: "bottom: -20px; left: 50%; transform: translateX(-50%);", 
+                    1: "bottom: 15%; left: 0%;", 
+                    2: "top: 15%; left: 0%;", 
+                    3: "top: -20px; left: 50%; transform: translateX(-50%);", 
+                    4: "top: 15%; right: 0%;", 
+                    5: "bottom: 15%; right: 0%;"}.get(idx, "")
+
+        def get_chip_style(idx):
+            return {0: "bottom: 25%; left: 50%; transform: translateX(-50%);",
+                    1: "bottom: 22%; left: 22%;",
+                    2: "top: 22%; left: 22%;",
+                    3: "top: 25%; left: 50%; transform: translateX(-50%);",
+                    4: "top: 22%; right: 22%;",
+                    5: "bottom: 22%; right: 22%;"}.get(idx, "")
+
         def get_btn_style(idx):
-            return {0: "bottom:25%;left:55%;", 1: "bottom:25%;left:18%;", 2: "top:25%;left:18%;", 
-                    3: "top:13%;left:55%;", 4: "top:25%;right:18%;", 5: "bottom:25%;right:18%;"}.get(idx, "")
+            return {0: "bottom: 10%; left: 60%;",
+                    1: "bottom: 25%; left: 16%;",
+                    2: "top: 10%; left: 16%;",
+                    3: "top: 10%; left: 60%;",
+                    4: "top: 10%; right: 16%;",
+                    5: "bottom: 25%; right: 16%;"}.get(idx, "")
+
+        opp_html = ""; chips_html = ""
 
         for i in range(1, 6):
             p = rot[i]
             is_act = (p == villain_pos)
             cls = "seat-active" if is_act else "seat-folded"
             cards = '<div class="opp-cards"></div>' if is_act else ""
-            opp_html += f'<div class="seat pos-{i} {cls}">{cards}<span class="seat-label">{p}</span></div>'
-            s = get_pos_style(i)
+            ss = get_seat_style(i)
+            opp_html += f'<div class="seat {cls}" style="{ss}">{cards}<span class="seat-label">{p}</span></div>'
             
+            cs = get_chip_style(i)
             if is_act and villain_bet:
                 bet_txt = f'<div class="bet-txt">{villain_bet}bb</div>'
-                chips_html += f'<div class="chip-container" style="{s}"><div class="chip-3bet"></div><div class="chip-3bet" style="margin-top:-15px;"></div>{bet_txt}</div>'
+                chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-3bet"></div><div class="chip-3bet" style="margin-top:-15px;"></div>{bet_txt}</div>'
             elif p in ["SB", "BB"] and not is_act:
-                chips_html += f'<div class="chip-container" style="{s}"><div class="poker-chip"></div></div>'
+                chips_html += f'<div class="chip-container" style="{cs}"><div class="poker-chip"></div></div>'
             
             if p == btn_pos:
                 bs = get_btn_style(i)
                 chips_html += f'<div class="dealer-button" style="{bs}">D</div>'
 
-        hs = get_pos_style(0)
+        hero_cs = get_chip_style(0)
         if hero_bet: 
             bet_txt = f'<div class="bet-txt">{hero_bet}bb</div>'
-            chips_html += f'<div class="chip-container" style="{hs}"><div class="poker-chip"></div><div class="poker-chip" style="margin-top:-10px"></div>{bet_txt}</div>'
+            chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="poker-chip"></div><div class="poker-chip" style="margin-top:-10px"></div>{bet_txt}</div>'
             
         if rot[0] == btn_pos:
-            bs = get_btn_style(0)
-            chips_html += f'<div class="dealer-button" style="{bs}">D</div>'
+            hero_bs = get_btn_style(0)
+            chips_html += f'<div class="dealer-button" style="{hero_bs}">D</div>'
 
         html = f"""
         <div class="game-area">
