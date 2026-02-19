@@ -37,17 +37,24 @@ def show():
     """, unsafe_allow_html=True)
 
     ranges_db = utils.load_ranges()
-    if not ranges_db: st.error("База ренджей пуста. Проверь папку spots_data."); return
+    if not ranges_db: st.error("База ренджей пуста."); return
     
-    # 1. СБОР СЦЕНАРИЕВ
+    # 1. СБОР И ЖЕСТКАЯ СКЛЕЙКА СЦЕНАРИЕВ
     scenario_map = {}
     for src, sc_dict in ranges_db.items():
         for sc, sp_dict in sc_dict.items():
-            if sc not in scenario_map: scenario_map[sc] = []
+            mapped_sc = sc
+            sc_lower = sc.lower()
+            if "3bet" in sc_lower: mapped_sc = "Def vs 3bet"
+            elif "pfr" in sc_lower or "bbvsbu" in sc_lower or "bb def" in sc_lower: mapped_sc = "BB def vs PFR"
+            elif "open raise" in sc_lower: mapped_sc = "Open Raise"
+            
+            if mapped_sc not in scenario_map: scenario_map[mapped_sc] = []
             for sp in sp_dict.keys():
-                scenario_map[sc].append((sp, f"{src}|{sc}|{sp}"))
+                scenario_map[mapped_sc].append((sp, f"{src}|{sc}|{sp}"))
     
-    all_scenarios = sorted(list(scenario_map.keys()))
+    all_scenarios = ["Open Raise", "BB def vs PFR", "Def vs 3bet"]
+    all_scenarios = [s for s in all_scenarios if s in scenario_map]
 
     with st.sidebar:
         st.header("⚙️ Фильтры")
@@ -88,8 +95,7 @@ def show():
         st.session_state.current_spot_key = chosen
         src, sc, sp = chosen.split('|')
         data = ranges_db[src][sc][sp]
-        ranges_data = data.get("ranges", {})
-        t_range = ranges_data.get("training", ranges_data.get("source", ranges_data.get("full", "")))
+        t_range = data.get("training", data.get("source", data.get("full", "")))
         poss = utils.parse_range_to_list(t_range)
         srs = utils.load_srs_data()
         w = [srs.get(f"{src}_{sc}_{sp}_{h}".replace(" ","_"), 100) for h in poss]
@@ -101,26 +107,17 @@ def show():
 
     src, sc, sp = st.session_state.current_spot_key.split('|')
     data = ranges_db[src][sc][sp]
-    setup = data.get("setup", {})
-    ranges_data = data.get("ranges", {})
+    is_defense = "call" in data
     
-    hero_pos = setup.get("hero_pos", "EP")
-    villain_pos = setup.get("villain_pos")
-    btn_pos = setup.get("btn_pos", "BTN")
-    hero_bet = setup.get("hero_bet")
-    villain_bet = setup.get("villain_bet")
-    
-    is_defense = villain_pos is not None
     rng = st.session_state.rng
     correct_act = "FOLD"
-    
     if is_defense:
-        w_c = utils.get_weight(st.session_state.hand, ranges_data.get("call", ""))
-        w_raise = utils.get_weight(st.session_state.hand, ranges_data.get("4bet", ranges_data.get("3bet", "")))
+        w_c = utils.get_weight(st.session_state.hand, data.get("call", ""))
+        w_raise = utils.get_weight(st.session_state.hand, data.get("4bet", data.get("3bet", "")))
         if rng < w_raise: correct_act = "RAISE"
         elif rng < (w_raise + w_c): correct_act = "CALL"
     else:
-        w = utils.get_weight(st.session_state.hand, ranges_data.get("full", ""))
+        w = utils.get_weight(st.session_state.hand, data.get("full", ""))
         if w > 0: correct_act = "RAISE"
 
     h_val = st.session_state.hand; s1, s2 = st.session_state.suits
@@ -131,10 +128,30 @@ def show():
     
     with col_center:
         order = ["EP", "MP", "CO", "BTN", "SB", "BB"]
-        try: hero_idx = order.index(hero_pos)
-        except ValueError: hero_idx = 0
-            
+        hero_idx = 0; u = sp.upper()
+        if any(p in u for p in ["EP", "UTG"]): hero_idx = 0
+        elif "MP" in u: hero_idx = 1
+        elif "CO" in u: hero_idx = 2
+        elif any(p in u for p in ["BTN", "BU"]): hero_idx = 3
+        elif "SB" in u: hero_idx = 4
+        elif "BB" in u: hero_idx = 5
         rot = order[hero_idx:] + order[:hero_idx]
+
+        is_3bet_pot = "3bet" in sc.lower() or "def" in sc.lower() or "vs" in sp.lower()
+        villain_pos = None
+        if is_3bet_pot:
+            parts = sp.split()
+            if "vs 3bet" in sp:
+                villain_pos = parts[-1]
+                if "/" in villain_pos: villain_pos = "BTN" if "BU" in villain_pos else "CO"
+                if villain_pos == "BU": villain_pos = "BTN"
+            elif "Blinds" in sp:
+                villain_pos = random.choice(["SB", "BB"])
+            elif "bbvsbu" in sp.lower():
+                villain_pos = "BTN"
+
+        try: hero_bet, villain_bet = utils.get_bet_sizes(sp)
+        except: hero_bet, villain_bet = None, None
 
         def get_seat_style(idx):
             return {0: "bottom: -20px; left: 50%; transform: translateX(-50%);", 1: "bottom: 15%; left: 0%;", 2: "top: 15%; left: 0%;", 
@@ -152,29 +169,43 @@ def show():
 
         for i in range(1, 6):
             p = rot[i]
-            is_act = (p == villain_pos)
-            cls = "seat-active" if is_act else "seat-folded"
-            cards = '<div class="opp-cards"></div>' if is_act else ""
+            
+            # Логика отрисовки карт
+            has_cards = False
+            if is_3bet_pot:
+                if p == villain_pos: has_cards = True
+            else:
+                if order.index(p) > order.index(rot[0]): has_cards = True
+                
+            cls = "seat-active" if has_cards else "seat-folded"
+            cards = '<div class="opp-cards"></div>' if has_cards else ""
             ss = get_seat_style(i)
             opp_html += f'<div class="seat {cls}" style="{ss}">{cards}<span class="seat-label">{p}</span></div>'
             
+            # Логика отрисовки фишек
             cs = get_chip_style(i)
-            if is_act and villain_bet:
-                bet_txt = f'<div class="bet-txt">{villain_bet}bb</div>'
+            if is_3bet_pot and p == villain_pos:
+                bet_txt = f'<div class="bet-txt">{villain_bet}bb</div>' if villain_bet else ""
                 chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-3bet"></div><div class="chip-3bet" style="margin-top:-15px;"></div>{bet_txt}</div>'
-            elif p in ["SB", "BB"] and not is_act:
+            elif p in ["SB", "BB"]:
                 chips_html += f'<div class="chip-container" style="{cs}"><div class="poker-chip"></div></div>'
             
-            if p == btn_pos:
+            if p == "BTN":
                 bs = get_btn_style(i)
                 chips_html += f'<div class="dealer-button" style="{bs}">D</div>'
 
+        # Фишки Хиро
         hero_cs = get_chip_style(0)
-        if hero_bet: 
-            bet_txt = f'<div class="bet-txt">{hero_bet}bb</div>'
-            chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="poker-chip"></div><div class="poker-chip" style="margin-top:-10px"></div>{bet_txt}</div>'
+        if is_3bet_pot: 
+            if hero_bet == 1.0: # Hero на BB защищается
+                chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="poker-chip"></div></div>'
+            else:
+                bet_txt = f'<div class="bet-txt">{hero_bet}bb</div>' if hero_bet else ""
+                chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="poker-chip"></div><div class="poker-chip" style="margin-top:-10px"></div>{bet_txt}</div>'
+        elif rot[0] in ["SB", "BB"]: # Open Raise, но Хиро на блайндах
+            chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="poker-chip"></div></div>'
             
-        if rot[0] == btn_pos:
+        if rot[0] == "BTN":
             hero_bs = get_btn_style(0)
             chips_html += f'<div class="dealer-button" style="{hero_bs}">D</div>'
 
