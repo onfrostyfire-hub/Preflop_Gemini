@@ -128,13 +128,18 @@ def show():
     c2 = "suit-red" if s2 in '♥' else "suit-blue" if s2 in '♦' else "suit-black"
 
     order = ["EP", "MP", "CO", "BTN", "SB", "BB"]
-    hero_idx = 0; u = sp.upper()
-    if any(p in u for p in ["EP", "UTG"]): hero_idx = 0
-    elif "MP" in u: hero_idx = 1
-    elif "CO" in u: hero_idx = 2
-    elif any(p in u for p in ["BTN", "BU"]): hero_idx = 3
-    elif "SB" in u: hero_idx = 4
-    elif "BB" in u: hero_idx = 5
+    
+    # ЖЕСТКИЙ ПАРСЕР ПОЗИЦИИ ХИРО
+    u = sp.upper()
+    hero_pos = "EP"
+    if u.startswith("EP") or u.startswith("UTG"): hero_pos = "EP"
+    elif u.startswith("MP"): hero_pos = "MP"
+    elif u.startswith("CO"): hero_pos = "CO"
+    elif u.startswith("BU") or u.startswith("BTN"): hero_pos = "BTN"
+    elif u.startswith("SB"): hero_pos = "SB"
+    elif u.startswith("BB"): hero_pos = "BB"
+    
+    hero_idx = order.index(hero_pos)
     rot = order[hero_idx:] + order[:hero_idx]
 
     is_3bet_pot = "3bet" in sc.lower() or "def" in sc.lower() or "vs" in sp.lower()
@@ -142,12 +147,13 @@ def show():
     if is_3bet_pot:
         parts = sp.split()
         if "vs 3bet" in sp:
-            villain_pos = parts[-1]
-            if "/" in villain_pos: villain_pos = "BTN" if "BU" in villain_pos else "CO"
-            if villain_pos == "BU": villain_pos = "BTN"
+            v = parts[-1]
+            if "/" in v: v = "BTN" if "BU" in v else "CO"
+            if v == "BU": v = "BTN"
+            villain_pos = v
         elif "Blinds" in sp:
             villain_pos = random.choice(["SB", "BB"])
-        elif "bbvsbu" in sp.lower():
+        elif "BBvsBU" in sp:
             villain_pos = "BTN"
 
     try: hero_bet, villain_bet = utils.get_bet_sizes(sp)
