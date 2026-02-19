@@ -39,7 +39,6 @@ def show():
     ranges_db = utils.load_ranges()
     if not ranges_db: st.error("База ренджей пуста."); return
     
-    # 1. СБОР И ЖЕСТКАЯ СКЛЕЙКА СЦЕНАРИЕВ
     scenario_map = {}
     for src, sc_dict in ranges_db.items():
         for sc, sp_dict in sc_dict.items():
@@ -128,13 +127,18 @@ def show():
     
     with col_center:
         order = ["EP", "MP", "CO", "BTN", "SB", "BB"]
-        hero_idx = 0; u = sp.upper()
-        if any(p in u for p in ["EP", "UTG"]): hero_idx = 0
-        elif "MP" in u: hero_idx = 1
-        elif "CO" in u: hero_idx = 2
-        elif any(p in u for p in ["BTN", "BU"]): hero_idx = 3
-        elif "SB" in u: hero_idx = 4
-        elif "BB" in u: hero_idx = 5
+        
+        # ЖЕСТКИЙ ПАРСЕР ПОЗИЦИИ ХИРО
+        u = sp.upper()
+        hero_pos = "EP"
+        if u.startswith("EP") or u.startswith("UTG"): hero_pos = "EP"
+        elif u.startswith("MP"): hero_pos = "MP"
+        elif u.startswith("CO"): hero_pos = "CO"
+        elif u.startswith("BU") or u.startswith("BTN"): hero_pos = "BTN"
+        elif u.startswith("SB"): hero_pos = "SB"
+        elif u.startswith("BB"): hero_pos = "BB"
+        
+        hero_idx = order.index(hero_pos)
         rot = order[hero_idx:] + order[:hero_idx]
 
         is_3bet_pot = "3bet" in sc.lower() or "def" in sc.lower() or "vs" in sp.lower()
@@ -142,12 +146,13 @@ def show():
         if is_3bet_pot:
             parts = sp.split()
             if "vs 3bet" in sp:
-                villain_pos = parts[-1]
-                if "/" in villain_pos: villain_pos = "BTN" if "BU" in villain_pos else "CO"
-                if villain_pos == "BU": villain_pos = "BTN"
+                v = parts[-1]
+                if "/" in v: v = "BTN" if "BU" in v else "CO"
+                if v == "BU": v = "BTN"
+                villain_pos = v
             elif "Blinds" in sp:
                 villain_pos = random.choice(["SB", "BB"])
-            elif "bbvsbu" in sp.lower():
+            elif "BBvsBU" in sp:
                 villain_pos = "BTN"
 
         try: hero_bet, villain_bet = utils.get_bet_sizes(sp)
@@ -170,7 +175,6 @@ def show():
         for i in range(1, 6):
             p = rot[i]
             
-            # Логика отрисовки карт
             has_cards = False
             if is_3bet_pot:
                 if p == villain_pos: has_cards = True
@@ -182,7 +186,6 @@ def show():
             ss = get_seat_style(i)
             opp_html += f'<div class="seat {cls}" style="{ss}">{cards}<span class="seat-label">{p}</span></div>'
             
-            # Логика отрисовки фишек
             cs = get_chip_style(i)
             if is_3bet_pot and p == villain_pos:
                 bet_txt = f'<div class="bet-txt">{villain_bet}bb</div>' if villain_bet else ""
@@ -194,15 +197,14 @@ def show():
                 bs = get_btn_style(i)
                 chips_html += f'<div class="dealer-button" style="{bs}">D</div>'
 
-        # Фишки Хиро
         hero_cs = get_chip_style(0)
         if is_3bet_pot: 
-            if hero_bet == 1.0: # Hero на BB защищается
+            if hero_bet == 1.0: 
                 chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="poker-chip"></div></div>'
             else:
                 bet_txt = f'<div class="bet-txt">{hero_bet}bb</div>' if hero_bet else ""
                 chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="poker-chip"></div><div class="poker-chip" style="margin-top:-10px"></div>{bet_txt}</div>'
-        elif rot[0] in ["SB", "BB"]: # Open Raise, но Хиро на блайндах
+        elif rot[0] in ["SB", "BB"]: 
             chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="poker-chip"></div></div>'
             
         if rot[0] == "BTN":
