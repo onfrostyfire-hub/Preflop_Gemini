@@ -31,7 +31,7 @@ def show():
         .bet-txt { font-size: 10px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; background: rgba(0,0,0,0.6); padding: 1px 3px; border-radius: 4px; margin-top: -5px; z-index: 20; }
         .hero-mob { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 20; background: #222; padding: 5px 10px; border-radius: 12px; border: 1px solid #ffc107; }
         .card-mob { width: 45px; height: 64px; background: white; border-radius: 4px; position: relative; color: black; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        .tl-mob { position: absolute; top: 1px; left: 3px; font-weight: bold; font-size: 14px; line-height: 1; }
+        .tl-mob { position: absolute top: 1px; left: 3px; font-weight: bold; font-size: 14px; line-height: 1; }
         .c-mob { position: absolute; top: 55%; left: 50%; transform: translate(-50%,-50%); font-size: 26px; }
         .suit-red { color: #d32f2f; } .suit-blue { color: #0056b3; } .suit-black { color: #111; }
         .rng-badge { position: absolute; bottom: 50px; right: -15px; width: 30px; height: 30px; background: #6f42c1; border: 2px solid #fff; border-radius: 50%; color: white; font-weight: bold; font-size: 12px; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 40; }
@@ -110,17 +110,23 @@ def show():
 
     src, sc, sp = st.session_state.current_spot_key.split('|')
     data = ranges_db[src][sc][sp]
-    is_defense = "call" in data
+    
+    is_defense = bool("call" in data or "def" in sc.lower() or "vs" in sp.lower())
     
     rng = st.session_state.rng
     correct_act = "FOLD"
+    
+    r_call = data.get("call", data.get("Call", ""))
+    r_raise = data.get("3bet", data.get("4bet", data.get("Raise", "")))
+    r_full = data.get("full", data.get("Full", ""))
+
     if is_defense:
-        w_c = utils.get_weight(st.session_state.hand, data.get("call", ""))
-        w_raise = utils.get_weight(st.session_state.hand, data.get("4bet", data.get("3bet", "")))
-        if rng < w_raise: correct_act = "RAISE"
-        elif rng < (w_raise + w_c): correct_act = "CALL"
+        w_c = utils.get_weight(st.session_state.hand, r_call)
+        w_raise_val = utils.get_weight(st.session_state.hand, r_raise)
+        if rng < w_raise_val: correct_act = "RAISE"
+        elif rng < (w_raise_val + w_c): correct_act = "CALL"
     else:
-        w = utils.get_weight(st.session_state.hand, data.get("full", ""))
+        w = utils.get_weight(st.session_state.hand, r_full)
         if w > 0: correct_act = "RAISE"
 
     h_val = st.session_state.hand; s1, s2 = st.session_state.suits
@@ -129,7 +135,6 @@ def show():
 
     order = ["EP", "MP", "CO", "BTN", "SB", "BB"]
     
-    # ЖЕСТКИЙ ПАРСЕР ПОЗИЦИИ ХИРО
     u = sp.upper()
     hero_pos = "EP"
     if u.startswith("EP") or u.startswith("UTG"): hero_pos = "EP"
@@ -145,16 +150,15 @@ def show():
     is_3bet_pot = "3bet" in sc.lower() or "def" in sc.lower() or "vs" in sp.lower()
     villain_pos = None
     if is_3bet_pot:
-        parts = sp.split()
-        if "vs 3bet" in sp:
-            v = parts[-1]
+        if "BBVSBU" in u or "BB VS BU" in u:
+            villain_pos = "BTN"
+        elif "VS 3BET" in u:
+            v = sp.split()[-1].upper()
             if "/" in v: v = "BTN" if "BU" in v else "CO"
             if v == "BU": v = "BTN"
             villain_pos = v
-        elif "Blinds" in sp:
+        elif "BLINDS" in u:
             villain_pos = random.choice(["SB", "BB"])
-        elif "BBvsBU" in sp:
-            villain_pos = "BTN"
 
     try: hero_bet, villain_bet = utils.get_bet_sizes(sp)
     except: hero_bet, villain_bet = None, None
