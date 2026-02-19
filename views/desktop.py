@@ -106,17 +106,24 @@ def show():
 
     src, sc, sp = st.session_state.current_spot_key.split('|')
     data = ranges_db[src][sc][sp]
-    is_defense = "call" in data
+    
+    # ЖЕЛЕЗОБЕТОННАЯ ПРОВЕРКА НА ЗАЩИТУ: ищем call или проверяем название спота
+    is_defense = bool("call" in data or "def" in sc.lower() or "vs" in sp.lower())
     
     rng = st.session_state.rng
     correct_act = "FOLD"
+    
+    r_call = data.get("call", data.get("Call", ""))
+    r_raise = data.get("3bet", data.get("4bet", data.get("Raise", "")))
+    r_full = data.get("full", data.get("Full", ""))
+
     if is_defense:
-        w_c = utils.get_weight(st.session_state.hand, data.get("call", ""))
-        w_raise = utils.get_weight(st.session_state.hand, data.get("4bet", data.get("3bet", "")))
-        if rng < w_raise: correct_act = "RAISE"
-        elif rng < (w_raise + w_c): correct_act = "CALL"
+        w_c = utils.get_weight(st.session_state.hand, r_call)
+        w_raise_val = utils.get_weight(st.session_state.hand, r_raise)
+        if rng < w_raise_val: correct_act = "RAISE"
+        elif rng < (w_raise_val + w_c): correct_act = "CALL"
     else:
-        w = utils.get_weight(st.session_state.hand, data.get("full", ""))
+        w = utils.get_weight(st.session_state.hand, r_full)
         if w > 0: correct_act = "RAISE"
 
     h_val = st.session_state.hand; s1, s2 = st.session_state.suits
@@ -128,7 +135,7 @@ def show():
     with col_center:
         order = ["EP", "MP", "CO", "BTN", "SB", "BB"]
         
-        # ЖЕСТКИЙ ПАРСЕР ПОЗИЦИИ ХИРО
+        # ПРИНУДИТЕЛЬНАЯ ПОСАДКА ХИРО ПО ИМЕНИ СПОТА
         u = sp.upper()
         hero_pos = "EP"
         if u.startswith("EP") or u.startswith("UTG"): hero_pos = "EP"
@@ -144,16 +151,15 @@ def show():
         is_3bet_pot = "3bet" in sc.lower() or "def" in sc.lower() or "vs" in sp.lower()
         villain_pos = None
         if is_3bet_pot:
-            parts = sp.split()
-            if "vs 3bet" in sp:
-                v = parts[-1]
+            if "BBVSBU" in u or "BB VS BU" in u:
+                villain_pos = "BTN"
+            elif "VS 3BET" in u:
+                v = sp.split()[-1].upper()
                 if "/" in v: v = "BTN" if "BU" in v else "CO"
                 if v == "BU": v = "BTN"
                 villain_pos = v
-            elif "Blinds" in sp:
+            elif "BLINDS" in u:
                 villain_pos = random.choice(["SB", "BB"])
-            elif "BBvsBU" in sp:
-                villain_pos = "BTN"
 
         try: hero_bet, villain_bet = utils.get_bet_sizes(sp)
         except: hero_bet, villain_bet = None, None
