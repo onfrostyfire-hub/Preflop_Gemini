@@ -2,11 +2,16 @@ import streamlit as st
 import utils
 
 def render_popover_selector(ranges_db, suffix, emoji):
-    k_src = f"src_{suffix}"
     k_sc = f"sc_{suffix}"
     k_sp = f"sp_{suffix}"
 
-    curr_src = st.session_state.get(k_src)
+    sc_map = {}
+    for src, sc_dict in ranges_db.items():
+        for sc, sp_dict in sc_dict.items():
+            if sc not in sc_map: sc_map[sc] = []
+            for sp in sp_dict.keys():
+                sc_map[sc].append((sp, src)) 
+
     curr_sc = st.session_state.get(k_sc)
     curr_sp = st.session_state.get(k_sp)
 
@@ -19,20 +24,16 @@ def render_popover_selector(ranges_db, suffix, emoji):
     st.markdown(display_text, unsafe_allow_html=True)
 
     with st.popover("⚙️ Настроить", use_container_width=True):
-        opts_src = list(ranges_db.keys())
-        idx_src = opts_src.index(curr_src) if curr_src in opts_src else 0
-        src = st.selectbox("Source", opts_src, key=k_src, index=idx_src) if opts_src else None
-
-        opts_sc = list(ranges_db[src].keys()) if src and src in ranges_db else []
+        opts_sc = sorted(list(sc_map.keys()))
         idx_sc = opts_sc.index(curr_sc) if curr_sc in opts_sc else 0
-        sc = st.selectbox("Scenario", opts_sc, key=k_sc, index=idx_sc) if opts_sc else None
-
-        opts_sp = []
-        if src and sc and sc in ranges_db.get(src, {}): opts_sp = list(ranges_db[src][sc].keys())
+        sc = st.selectbox("Сценарий", opts_sc, key=k_sc, index=idx_sc) if opts_sc else None
+        
+        opts_sp = [x[0] for x in sc_map[sc]] if sc else []
         idx_sp = opts_sp.index(curr_sp) if curr_sp in opts_sp else 0
-        sp = st.selectbox("Spot", opts_sp, key=k_sp, index=idx_sp) if opts_sp else None
+        sp = st.selectbox("Спот", opts_sp, key=k_sp, index=idx_sp) if opts_sp else None
 
-    if src and sc and sp:
+    if sc and sp:
+        src = next((x[1] for x in sc_map[sc] if x[0] == sp), None)
         return ranges_db[src][sc][sp]
     return None
 
