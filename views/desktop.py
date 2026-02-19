@@ -42,11 +42,17 @@ def show():
     with st.sidebar:
         st.header("Настройки фильтров")
         saved = utils.load_user_settings()
-        sel_src = st.multiselect("Источник (Source)", list(ranges_db.keys()), default=saved.get("sources", [list(ranges_db.keys())[0]]))
+        
+        all_src = list(ranges_db.keys())
+        saved_src = [s for s in saved.get("sources", []) if s in all_src]
+        sel_src = st.multiselect("Источник (Source)", all_src, default=saved_src if saved_src else (all_src[:1] if all_src else []))
+        
         avail_sc = set()
         for s in sel_src: avail_sc.update(ranges_db[s].keys())
         avail_sc = sorted(list(avail_sc))
-        sel_sc = st.multiselect("Сценарий (Scenario)", avail_sc, default=saved.get("scenarios", [avail_sc[0]] if avail_sc else []))
+        
+        saved_sc = [sc for sc in saved.get("scenarios", []) if sc in avail_sc]
+        sel_sc = st.multiselect("Сценарий (Scenario)", avail_sc, default=saved_sc if saved_sc else (avail_sc[:1] if avail_sc else []))
         
         if st.button("Применить"):
             utils.save_user_settings({"sources": sel_src, "scenarios": sel_sc})
