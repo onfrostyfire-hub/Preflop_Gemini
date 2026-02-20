@@ -21,7 +21,6 @@ for i, r1 in enumerate(RANKS):
 def load_ranges():
     db = {}
     if not os.path.exists(SPOTS_DIR): return db
-    # Читаем все файлы из папки spots_data
     for file in os.listdir(SPOTS_DIR):
         if file.endswith('.json'):
             with open(os.path.join(SPOTS_DIR, file), 'r', encoding='utf-8') as f:
@@ -37,10 +36,6 @@ def load_ranges():
     return db
 
 def get_filtered_pool(ranges_db, selected_sources, selected_scenarios):
-    """
-    Выдает только те споты, которые принадлежат выбранным сценариям.
-    Больше никаких хардкод-групп и каши.
-    """
     pool = []
     for src in selected_sources:
         for sc in selected_scenarios:
@@ -49,7 +44,6 @@ def get_filtered_pool(ranges_db, selected_sources, selected_scenarios):
                 pool.append(f"{src}|{sc}|{sp}")
     return pool
 
-# --- СТАНДАРТНЫЕ ФУНКЦИИ ПАМЯТИ И ЛОГОВ ---
 def load_srs_data():
     if not os.path.exists(SRS_FILE): return {}
     with open(SRS_FILE, 'r', encoding='utf-8') as f: return json.load(f)
@@ -132,11 +126,10 @@ def parse_range_to_list(range_str):
     return list(set(hand_list))
 
 def render_range_matrix(spot_data, target_hand=None):
-    # Теперь мы извлекаем ренджи из вложенного блока "ranges", как указано в новых JSON
-    ranges = spot_data.get("ranges", {})
-    r_call = ranges.get("call", "")
-    r_raise = ranges.get("4bet", ranges.get("3bet", ""))
-    r_full = ranges.get("full", "")
+    ranges = spot_data.get("ranges", spot_data)
+    r_call = ranges.get("call", ranges.get("Call", ""))
+    r_raise = ranges.get("4bet", ranges.get("3bet", ranges.get("Raise", "")))
+    r_full = ranges.get("full", ranges.get("Full", ""))
     
     grid_html = '<div style="display:grid;grid-template-columns:repeat(13,1fr);gap:1px;background:#111;padding:1px;border:1px solid #444;">'
     for r1 in RANKS:
@@ -164,4 +157,24 @@ def render_range_matrix(spot_data, target_hand=None):
             style += f"background:{bg};"
             if target_hand and h == target_hand: style += "border:1.5px solid #ffc107;z-index:10;box-shadow: 0 0 4px #ffc107;"
             grid_html += f'<div style="{style}">{h}</div>'
-    return grid_html + '</div>'
+    grid_html += '</div>'
+
+    # --- ОТРИСОВКА СТАТИСТИКИ ---
+    stats = spot_data.get("stats", {})
+    if stats:
+        stats_html = '<div style="display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; font-size:12px; font-weight:bold; font-family:sans-serif;">'
+        for k, v in stats.items():
+            kl = k.lower()
+            if "raise" in kl or "3bet" in kl or "4bet" in kl or "pfr" in kl:
+                color = "#d63384" # Розовый/Красный
+            elif "call" in kl:
+                color = "#28a745" # Зеленый
+            elif "fold" in kl:
+                color = "#6c757d" # Серый
+            else:
+                color = "#adb5bd" # Дефолтный
+            stats_html += f'<div style="background:#222; border:1px solid {color}; color:{color}; padding:4px 10px; border-radius:6px; box-shadow: 0 2px 4px rgba(0,0,0,0.4);">{k} {v}</div>'
+        stats_html += '</div>'
+        grid_html += stats_html
+
+    return grid_html
