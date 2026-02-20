@@ -35,7 +35,7 @@
       "stats": { "4bet": "4.5%", "Call": "12%", "Fold": "60%" },
       "ranges": {
         "source": "AA,KK,QQ,JJ,TT,99,88,77,66,55,44,33,22,AK,AQ,AJ,AT,A9,A8,A7,A6,A5,A4,A3,A2s,KQ,KJ,KT,K9,K8,K7s,K6s,K5s,K4s,K3s,K2s,QJ,QT,Q9,Q8s,Q7s,Q6s,Q5s,Q4s,Q3s,JT,J9,J8s,J7s,J6s,J5s,T9,T8s,T7s,T6s,98s,97s,96s,87s,86s,76s,75s,65s,64s,54s",
-        "call": "JJ:0.5,TT,99,88,77,66,55,44,33:0.5,22:0.5,AQ,AJ,ATs,A9s,A8s,A7s:0.5,A6s:0.5,A5s,A4s,A3s,KQ,KJs,KTs,K9s,K8s,QJs,QTs,Q9s:0.5,JTs,J9s,T9s,T8s,98s,87s,76s",
+        "call": "JJ:0.5,TT,99,88,77,66,55,44:0.5,33:0.5,22:0.5,AQ,AJs,AJo:0.5,ATs,A9s,A8s:0.5,A5s,A4s,KQ,KJs,KTs,K9s:0.5,QJs,QTs,Q9s:0.5,JTs,J9s,T9s,T8s:0.5,98s,87s,76s,65s:0.5,54s:0.5",
         "4bet": "AA,KK,QQ,JJ:0.5,AK,AJo:0.5,ATo:0.5,A8s:0.5,A7s:0.5,K9s:0.5,Q9s:0.5,T8s:0.5",
         "training": "JJ,44,33,22,AJo,ATo,A8s,A7s,A6s,A5s,A4s,A3s,A2s,KQo,KJo,KTs,K9s,K8s,K7s,QTs,Q9s,Q8s,JTs,J9s,J8s,T9s,T8s,98s,97s,87s,86s,76s,65s,54s"
       }
