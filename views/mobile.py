@@ -113,7 +113,6 @@ def show():
     data = ranges_db[src][sc][sp]
     r_data = data.get("ranges", data)
     
-    # 1. ЖЕСТКОЕ ОПРЕДЕЛЕНИЕ ПОЗИЦИЙ
     u = sp.upper()
     hero_pos = "EP"
     if u.startswith("EP") or u.startswith("UTG"): hero_pos = "EP"
@@ -123,9 +122,10 @@ def show():
     elif u.startswith("SB"): hero_pos = "SB"
     elif u.startswith("BB"): hero_pos = "BB"
 
-    is_3bet_pot = "3bet" in sc.lower() or "def" in sc.lower() or "vs" in sp.lower()
+    is_defense = bool("call" in r_data or "Call" in r_data or "def" in sc.lower() or "vs" in sp.lower())
+    
     villain_pos = None
-    if is_3bet_pot:
+    if is_defense:
         if "BBVSBU" in u or "BB VS BU" in u:
             villain_pos = "BTN"
         elif "VS 3BET" in u:
@@ -135,16 +135,36 @@ def show():
             villain_pos = v
         elif "BLINDS" in u:
             villain_pos = random.choice(["SB", "BB"])
-
-    # 2. ЖЕЛЕЗОБЕТОННАЯ ПРОВЕРКА НА ЗАЩИТУ
-    is_defense = False
-    if villain_pos is not None: is_defense = True
-    if "call" in r_data or "Call" in r_data: is_defense = True
-    if "def" in sc.lower() or "vs" in sp.lower(): is_defense = True
+            
+    display_hero_bet = None
+    display_villain_bet = None
     
+    if is_defense:
+        if "bbvsbu" in sp.lower() or "bb def" in sc.lower():
+            display_hero_bet = 1.0
+            display_villain_bet = 2.5
+        else:
+            display_hero_bet = 2.5 
+            v_sizes = {
+                "SB def vs 3bet BB": 9.0,
+                "BU def vs 3bet SB": 12.0,
+                "BU def vs 3bet BB": 12.0,
+                "CO def vs 3bet SB": 12.0,
+                "CO def vs 3bet BB": 12.0,
+                "CO def vs 3bet BU": 7.5,
+                "EP vs 3bet CO/BU": 7.5,
+                "EP vs 3bet MP": 7.5,
+                "EP vs 3bet Blinds": 12.0
+            }
+            for k, v in v_sizes.items():
+                if k.replace(" ", "").lower() in sp.replace(" ", "").lower():
+                    display_villain_bet = v
+                    break
+            if not display_villain_bet:
+                display_villain_bet = 9.0
+
     rng = st.session_state.rng
     correct_act = "FOLD"
-    
     r_call = r_data.get("call", r_data.get("Call", ""))
     r_raise = r_data.get("4bet", r_data.get("3bet", r_data.get("Raise", "")))
     r_full = r_data.get("full", r_data.get("Full", ""))
@@ -167,9 +187,6 @@ def show():
     except ValueError: hero_idx = 0
     rot = order[hero_idx:] + order[:hero_idx]
 
-    try: hero_bet, villain_bet = utils.get_bet_sizes(sp)
-    except: hero_bet, villain_bet = None, None
-
     def get_seat_style(idx):
         return {0: "bottom: -20px; left: 50%; transform: translateX(-50%);", 1: "bottom: 15%; left: 0%;", 2: "top: 15%; left: 0%;", 
                 3: "top: -20px; left: 50%; transform: translateX(-50%);", 4: "top: 15%; right: 0%;", 5: "bottom: 15%; right: 0%;"}.get(idx, "")
@@ -188,10 +205,10 @@ def show():
         p = rot[i]
         
         has_cards = False
-        if is_defense:
-            if p == villain_pos: has_cards = True
-        else:
-            if order.index(p) > order.index(hero_pos): has_cards = True
+        if p == villain_pos: 
+            has_cards = True
+        if order.index(p) > order.index(hero_pos): 
+            has_cards = True
             
         cls = "seat-active" if has_cards else "seat-folded"
         cards = '<div class="opp-cards-mob"></div>' if has_cards else ""
@@ -199,8 +216,8 @@ def show():
         opp_html += f'<div class="seat {cls}" style="{ss}">{cards}<span class="seat-label">{p}</span></div>'
         
         cs = get_chip_style(i)
-        if is_defense and p == villain_pos:
-            bet_txt = f'<div class="bet-txt">{villain_bet}bb</div>' if villain_bet else ""
+        if is_defense and p == villain_pos and display_villain_bet:
+            bet_txt = f'<div class="bet-txt">{display_villain_bet}bb</div>'
             chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-3bet"></div><div class="chip-3bet" style="margin-top:-12px;"></div>{bet_txt}</div>'
         elif p in ["SB", "BB"]:
             if not (is_defense and p == villain_pos):
@@ -211,11 +228,11 @@ def show():
             chips_html += f'<div class="dealer-mob" style="{bs}">D</div>'
 
     hero_cs = get_chip_style(0)
-    if is_defense: 
-        if hero_bet == 1.0: 
-            chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="chip-mob"></div></div>'
-        elif hero_bet:
-            bet_txt = f'<div class="bet-txt">{hero_bet}bb</div>'
+    if is_defense and display_hero_bet: 
+        bet_txt = f'<div class="bet-txt">{display_hero_bet}bb</div>'
+        if display_hero_bet == 1.0:
+            chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="chip-mob"></div>{bet_txt}</div>'
+        else:
             chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="chip-mob"></div><div class="chip-mob" style="margin-top:-5px;"></div>{bet_txt}</div>'
     else:
         if hero_pos in ["SB", "BB"]: 
