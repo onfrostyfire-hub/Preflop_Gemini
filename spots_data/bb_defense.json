@@ -21,6 +21,26 @@
         "3bet": "AA,KK,QQ,JJ,TT,99,AK,AQ,AJs,AJo:0.5,A5s,A4s,KQs,KQo:0.5,KJs,KJo:0.5,KTs:0.5,QJs,QTs,JTs,J9s,T9s,T8s,98s,87s,76s,65s,54s",
         "training": "AJo,AT,A8s,A7s,A6o,A5s,A4,A3,A2,KQo,KJo,KTs,K8o,Q9,J9,J8s,J4s,J3s,J2s,T9o,T8s,T7s,T6s,T5s,T4s,T3s,98o,97s,96s,95s,94s,85s,84s,74s,73s,63s,62s,52s,42s,32s"
       }
+    },
+    "BBvsSB x3 nl500": {
+      "setup": { "hero_pos": "BB", "villain_pos": "SB", "btn_pos": "BTN", "hero_bet": 1.0, "villain_bet": 3.0, "is_3bet_pot": false },
+      "stats": { "3bet": "18%", "Call": "38%", "Fold": "44%" },
+      "ranges": {
+        "source": "ALL",
+        "call": "88,77,66,55,44,33,22,AJo:0.5,ATo,A9,A8,A7s,A7o:0.5,A6s,A6o:0.5,A5o,A4o,A3s,A3o:0.5,A2s,A2o:0.5,KQo:0.5,KJo,KTs:0.5,KTo,K9,K8s,K8o:0.5,K7s,K7o:0.5,K6s,K5s,K4s,K3s,K2s,QJo,QTo,Q9s,Q9o:0.5,Q8s,Q8o:0.5,Q7s,Q6s,Q5s,Q4s,Q3s,Q2s,JTo,J9s,J9o:0.5,J8s,J8o:0.5,J7s,J6s:0.5,J5s:0.5,J4s,J3s,J2s,T9o,T8s,T8o:0.5,T7s,T6s:0.5,T5s:0.5,T4s:0.5,T3s:0.5,T2s:0.5,98o,97s,96s,95s,87o,86s,85s,84s,76o:0.5,75s,74s,73s,65o:0.5,64s,63s,54o:0.5,53s,52s,43s,42s,32s",
+        "3bet": "AA,KK,QQ,JJ,TT,99,AK,AQ,AJs,AJo:0.5,ATs,A7o:0.5,A6o:0.5,A5s,A4s,A3o:0.5,A2o:0.5,KQs,KQo:0.5,KJs,KTs:0.5,K8o:0.5,K7o:0.5,K6o:0.5,K5o:0.5,QJs,QTs,Q9o:0.5,Q8o:0.5,JTs,J9o:0.5,J8o:0.5,J6s:0.5,J5s:0.5,T9s,T8o:0.5,T7o:0.5,T6s:0.5,T5s:0.5,T4s:0.5,T3s:0.5,T2s:0.5,98s,87s,76s,65s,54s",
+        "training": "99,88,77,AQo,AJo,AT,A9s,A7o,A6o,A5,A4,A3,A2,KQo,KJo,KTs,K9,K8o,K7o,K6o,K5o,QJs,QTs,Q9,Q8o,JTs,J9,J8o,J6s,J5s,J4s,J3s,J2s,T9,T8,T7o,T6s,T5s,T4s,T3s,T2s,98,97o,87,76,65,54"
+      }
+    },
+    "BBvsSB x3 nl100": {
+      "setup": { "hero_pos": "BB", "villain_pos": "SB", "btn_pos": "BTN", "hero_bet": 1.0, "villain_bet": 3.0, "is_3bet_pot": false },
+      "stats": { "3bet": "19%", "Call": "32%", "Fold": "49%" },
+      "ranges": {
+        "source": "ALL",
+        "call": "88,77,66,55,44,33,22,AJo:0.5,ATo,A9,A8,A7s,A7o:0.5,A6s,A6o:0.5,A5o,A4o,A3s,A2s,KQo:0.5,KJo,KTs:0.5,KTo,K9,K8s,K7s,K6s,K5s,K4s,K3s,K2s,QJo,QTo,Q9s,Q9o:0.5,Q8s,Q7s,Q6s,Q5s,Q4s,Q3s,Q2s,JTo,J9s,J9o:0.5,J8s,J7s,J6s:0.5,J5s:0.5,J4s,J3s,J2s,T9o,T8s,T7s,T6s:0.5,98o:0.5,97s,96s,95s,87o:0.5,86s,85s,75s,74s,64s,63s,53s,52s,43s,42s",
+        "3bet": "AA,KK,QQ,JJ,TT,99,AK,AQ,AJs,AJo:0.5,ATs,A7o:0.5,A6o:0.5,A5s,A4s,A3o,A2o,KQs,KQo:0.5,KJs,KTs:0.5,K8o:0.5,K7o:0.5,K6o:0.5,K5o:0.5,QJs,QTs,Q9o:0.5,Q8o:0.5,JTs,J9o:0.5,J8o:0.5,J6s:0.5,J5s:0.5,T9s,T8o:0.5,T7o:0.5,T6s:0.5,T5s,T4s,T3s:0.5,T2s:0.5,98s,87s,76s,65s,54s",
+        "training": "99,88,77,AQo,AJo,AT,A9s,A7o,A6o,A5,A4,A3,A2,KQo,KJo,KTs,K9,K8o,K7o,K6o,K5o,QJs,QTs,Q9,Q8o,JTs,J9,J8o,J6s,J5s,J4s,J3s,J2s,T9,T8,T7o,T6s,T5s,T4s,T3s,T2s,98,97o,87,76,65,54"
+      }
     }
   }
 }
