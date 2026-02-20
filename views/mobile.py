@@ -122,46 +122,39 @@ def show():
     elif u.startswith("SB"): hero_pos = "SB"
     elif u.startswith("BB"): hero_pos = "BB"
 
-    is_defense = bool("call" in r_data or "Call" in r_data or "def" in sc.lower() or "vs" in sp.lower())
+    is_bb_def = bool("bb def" in sc.lower() or "bbvsbu" in sp.lower())
+    is_3bet_pot = bool("3bet" in sc.lower() or ("vs" in sp.lower() and not is_bb_def))
+    is_defense = is_bb_def or is_3bet_pot
     
     villain_pos = None
-    if is_defense:
-        if "BBVSBU" in u or "BB VS BU" in u:
-            villain_pos = "BTN"
-        elif "VS 3BET" in u:
-            v = sp.split()[-1].upper()
-            if "/" in v: v = "BTN" if "BU" in v else "CO"
-            if v == "BU": v = "BTN"
-            villain_pos = v
-        elif "BLINDS" in u:
-            villain_pos = random.choice(["SB", "BB"])
+    if is_bb_def:
+        villain_pos = "BTN"
+    elif is_3bet_pot:
+        v = sp.split()[-1].upper()
+        if "/" in v: v = "BTN" if "BU" in v else "CO"
+        if v == "BU": v = "BTN"
+        if v == "BLINDS": v = random.choice(["SB", "BB"])
+        villain_pos = v
             
     display_hero_bet = None
     display_villain_bet = None
     
-    if is_defense:
-        if "bbvsbu" in sp.lower() or "bb def" in sc.lower():
-            display_hero_bet = 1.0
-            display_villain_bet = 2.5
-        else:
-            display_hero_bet = 2.5 
-            v_sizes = {
-                "SB def vs 3bet BB": 9.0,
-                "BU def vs 3bet SB": 12.0,
-                "BU def vs 3bet BB": 12.0,
-                "CO def vs 3bet SB": 12.0,
-                "CO def vs 3bet BB": 12.0,
-                "CO def vs 3bet BU": 7.5,
-                "EP vs 3bet CO/BU": 7.5,
-                "EP vs 3bet MP": 7.5,
-                "EP vs 3bet Blinds": 12.0
-            }
-            for k, v in v_sizes.items():
-                if k.replace(" ", "").lower() in sp.replace(" ", "").lower():
-                    display_villain_bet = v
-                    break
-            if not display_villain_bet:
-                display_villain_bet = 9.0
+    if is_bb_def:
+        display_hero_bet = 1.0
+        display_villain_bet = 2.5
+    elif is_3bet_pot:
+        display_hero_bet = 2.5 
+        clean_sp = sp.replace(" ", "").lower()
+        if "sb" in clean_sp and "3betbb" in clean_sp: display_villain_bet = 9.0
+        elif "bu" in clean_sp and "3betsb" in clean_sp: display_villain_bet = 12.0
+        elif "bu" in clean_sp and "3betbb" in clean_sp: display_villain_bet = 12.0
+        elif "co" in clean_sp and "3betsb" in clean_sp: display_villain_bet = 12.0
+        elif "co" in clean_sp and "3betbb" in clean_sp: display_villain_bet = 12.0
+        elif "co" in clean_sp and "3betbu" in clean_sp: display_villain_bet = 7.5
+        elif "ep" in clean_sp and ("co/bu" in clean_sp or "cobu" in clean_sp): display_villain_bet = 7.5
+        elif "ep" in clean_sp and "mp" in clean_sp: display_villain_bet = 7.5
+        elif "ep" in clean_sp and "blinds" in clean_sp: display_villain_bet = 12.0
+        else: display_villain_bet = 9.0
 
     rng = st.session_state.rng
     correct_act = "FOLD"
@@ -218,7 +211,10 @@ def show():
         cs = get_chip_style(i)
         if is_defense and p == villain_pos and display_villain_bet:
             bet_txt = f'<div class="bet-txt">{display_villain_bet}bb</div>'
-            chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-3bet"></div><div class="chip-3bet" style="margin-top:-12px;"></div>{bet_txt}</div>'
+            if is_3bet_pot:
+                chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-3bet"></div><div class="chip-3bet" style="margin-top:-12px;"></div>{bet_txt}</div>'
+            else:
+                chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-mob"></div><div class="chip-mob" style="margin-top:-5px;"></div>{bet_txt}</div>'
         elif p in ["SB", "BB"]:
             if not (is_defense and p == villain_pos):
                 chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-mob"></div></div>'
