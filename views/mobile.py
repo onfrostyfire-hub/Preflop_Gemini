@@ -113,7 +113,34 @@ def show():
     data = ranges_db[src][sc][sp]
     r_data = data.get("ranges", data)
     
-    is_defense = bool("call" in r_data or "Call" in r_data or "def" in sc.lower() or "vs" in sp.lower())
+    # 1. ЖЕСТКОЕ ОПРЕДЕЛЕНИЕ ПОЗИЦИЙ
+    u = sp.upper()
+    hero_pos = "EP"
+    if u.startswith("EP") or u.startswith("UTG"): hero_pos = "EP"
+    elif u.startswith("MP"): hero_pos = "MP"
+    elif u.startswith("CO"): hero_pos = "CO"
+    elif u.startswith("BU") or u.startswith("BTN"): hero_pos = "BTN"
+    elif u.startswith("SB"): hero_pos = "SB"
+    elif u.startswith("BB"): hero_pos = "BB"
+
+    is_3bet_pot = "3bet" in sc.lower() or "def" in sc.lower() or "vs" in sp.lower()
+    villain_pos = None
+    if is_3bet_pot:
+        if "BBVSBU" in u or "BB VS BU" in u:
+            villain_pos = "BTN"
+        elif "VS 3BET" in u:
+            v = sp.split()[-1].upper()
+            if "/" in v: v = "BTN" if "BU" in v else "CO"
+            if v == "BU": v = "BTN"
+            villain_pos = v
+        elif "BLINDS" in u:
+            villain_pos = random.choice(["SB", "BB"])
+
+    # 2. ЖЕЛЕЗОБЕТОННАЯ ПРОВЕРКА НА ЗАЩИТУ
+    is_defense = False
+    if villain_pos is not None: is_defense = True
+    if "call" in r_data or "Call" in r_data: is_defense = True
+    if "def" in sc.lower() or "vs" in sp.lower(): is_defense = True
     
     rng = st.session_state.rng
     correct_act = "FOLD"
@@ -136,30 +163,9 @@ def show():
     c2 = "suit-red" if s2 in '♥' else "suit-blue" if s2 in '♦' else "suit-black"
 
     order = ["EP", "MP", "CO", "BTN", "SB", "BB"]
-    u = sp.upper()
-    hero_pos = "EP"
-    if u.startswith("EP") or u.startswith("UTG"): hero_pos = "EP"
-    elif u.startswith("MP"): hero_pos = "MP"
-    elif u.startswith("CO"): hero_pos = "CO"
-    elif u.startswith("BU") or u.startswith("BTN"): hero_pos = "BTN"
-    elif u.startswith("SB"): hero_pos = "SB"
-    elif u.startswith("BB"): hero_pos = "BB"
-    
-    hero_idx = order.index(hero_pos)
+    try: hero_idx = order.index(hero_pos)
+    except ValueError: hero_idx = 0
     rot = order[hero_idx:] + order[:hero_idx]
-
-    is_3bet_pot = "3bet" in sc.lower() or "def" in sc.lower() or "vs" in sp.lower()
-    villain_pos = None
-    if is_3bet_pot:
-        if "BBVSBU" in u or "BB VS BU" in u:
-            villain_pos = "BTN"
-        elif "VS 3BET" in u:
-            v = sp.split()[-1].upper()
-            if "/" in v: v = "BTN" if "BU" in v else "CO"
-            if v == "BU": v = "BTN"
-            villain_pos = v
-        elif "BLINDS" in u:
-            villain_pos = random.choice(["SB", "BB"])
 
     try: hero_bet, villain_bet = utils.get_bet_sizes(sp)
     except: hero_bet, villain_bet = None, None
@@ -180,8 +186,9 @@ def show():
 
     for i in range(1, 6):
         p = rot[i]
+        
         has_cards = False
-        if is_3bet_pot:
+        if is_defense:
             if p == villain_pos: has_cards = True
         else:
             if order.index(p) > order.index(hero_pos): has_cards = True
@@ -192,11 +199,11 @@ def show():
         opp_html += f'<div class="seat {cls}" style="{ss}">{cards}<span class="seat-label">{p}</span></div>'
         
         cs = get_chip_style(i)
-        if is_3bet_pot and p == villain_pos:
+        if is_defense and p == villain_pos:
             bet_txt = f'<div class="bet-txt">{villain_bet}bb</div>' if villain_bet else ""
             chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-3bet"></div><div class="chip-3bet" style="margin-top:-12px;"></div>{bet_txt}</div>'
         elif p in ["SB", "BB"]:
-            if not (is_3bet_pot and p == villain_pos):
+            if not (is_defense and p == villain_pos):
                 chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-mob"></div></div>'
         
         if p == "BTN":
@@ -204,7 +211,7 @@ def show():
             chips_html += f'<div class="dealer-mob" style="{bs}">D</div>'
 
     hero_cs = get_chip_style(0)
-    if is_3bet_pot: 
+    if is_defense: 
         if hero_bet == 1.0: 
             chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="chip-mob"></div></div>'
         elif hero_bet:
