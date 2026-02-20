@@ -89,14 +89,13 @@ def show():
     if 'srs_mode' not in st.session_state: st.session_state.srs_mode = False
     if 'current_spot_key' not in st.session_state: st.session_state.current_spot_key = None
     
-    # 1. ВЫБОР РУКИ ИЗ ПРАВИЛЬНОГО БЛОКА RANGES
     if st.session_state.hand is None or st.session_state.current_spot_key is None or st.session_state.current_spot_key not in pool:
         chosen = random.choice(pool)
         st.session_state.current_spot_key = chosen
         src, sc, sp = chosen.split('|')
         data = ranges_db[src][sc][sp]
-        ranges_data = data.get("ranges", {})
-        t_range = ranges_data.get("training", ranges_data.get("source", ranges_data.get("full", "")))
+        r_data = data.get("ranges", data)
+        t_range = r_data.get("training", r_data.get("source", r_data.get("full", "")))
         poss = utils.parse_range_to_list(t_range)
         srs = utils.load_srs_data()
         w = [srs.get(f"{src}_{sc}_{sp}_{h}".replace(" ","_"), 100) for h in poss]
@@ -108,25 +107,43 @@ def show():
 
     src, sc, sp = st.session_state.current_spot_key.split('|')
     data = ranges_db[src][sc][sp]
-    setup = data.get("setup", {})
-    ranges_data = data.get("ranges", {})
+    r_data = data.get("ranges", data)
     
-    # Жесткое чтение позиций из твоего setup (никакой угадайки)
-    hero_pos = setup.get("hero_pos", "EP")
-    villain_pos = setup.get("villain_pos")
-    btn_pos = setup.get("btn_pos", "BTN")
-    hero_bet = setup.get("hero_bet")
-    villain_bet = setup.get("villain_bet")
-    
-    # Если есть злодей (villain_pos не null) или есть поле call в диапазонах — это 100% защита
-    is_defense = bool(villain_pos is not None or "call" in ranges_data)
+    # 1. ЖЕСТКОЕ ОПРЕДЕЛЕНИЕ ПОЗИЦИЙ
+    u = sp.upper()
+    hero_pos = "EP"
+    if u.startswith("EP") or u.startswith("UTG"): hero_pos = "EP"
+    elif u.startswith("MP"): hero_pos = "MP"
+    elif u.startswith("CO"): hero_pos = "CO"
+    elif u.startswith("BU") or u.startswith("BTN"): hero_pos = "BTN"
+    elif u.startswith("SB"): hero_pos = "SB"
+    elif u.startswith("BB"): hero_pos = "BB"
+
+    is_3bet_pot = "3bet" in sc.lower() or "def" in sc.lower() or "vs" in sp.lower()
+    villain_pos = None
+    if is_3bet_pot:
+        if "BBVSBU" in u or "BB VS BU" in u:
+            villain_pos = "BTN"
+        elif "VS 3BET" in u:
+            v = sp.split()[-1].upper()
+            if "/" in v: v = "BTN" if "BU" in v else "CO"
+            if v == "BU": v = "BTN"
+            villain_pos = v
+        elif "BLINDS" in u:
+            villain_pos = random.choice(["SB", "BB"])
+
+    # 2. ЖЕЛЕЗОБЕТОННАЯ ПРОВЕРКА НА ЗАЩИТУ
+    is_defense = False
+    if villain_pos is not None: is_defense = True
+    if "call" in r_data or "Call" in r_data: is_defense = True
+    if "def" in sc.lower() or "vs" in sp.lower(): is_defense = True
     
     rng = st.session_state.rng
     correct_act = "FOLD"
     
-    r_call = ranges_data.get("call", ranges_data.get("Call", ""))
-    r_raise = ranges_data.get("4bet", ranges_data.get("3bet", ranges_data.get("Raise", "")))
-    r_full = ranges_data.get("full", ranges_data.get("Full", ""))
+    r_call = r_data.get("call", r_data.get("Call", ""))
+    r_raise = r_data.get("4bet", r_data.get("3bet", r_data.get("Raise", "")))
+    r_full = r_data.get("full", r_data.get("Full", ""))
 
     if is_defense:
         w_c = utils.get_weight(st.session_state.hand, r_call)
@@ -148,6 +165,9 @@ def show():
         try: hero_idx = order.index(hero_pos)
         except ValueError: hero_idx = 0
         rot = order[hero_idx:] + order[:hero_idx]
+
+        try: hero_bet, villain_bet = utils.get_bet_sizes(sp)
+        except: hero_bet, villain_bet = None, None
 
         def get_seat_style(idx):
             return {0: "bottom: -20px; left: 50%; transform: translateX(-50%);", 1: "bottom: 15%; left: 0%;", 2: "top: 15%; left: 0%;", 
@@ -185,7 +205,7 @@ def show():
                 if not (is_defense and p == villain_pos):
                     chips_html += f'<div class="chip-container" style="{cs}"><div class="poker-chip"></div></div>'
             
-            if p == btn_pos:
+            if p == "BTN":
                 bs = get_btn_style(i)
                 chips_html += f'<div class="dealer-button" style="{bs}">D</div>'
 
@@ -200,7 +220,7 @@ def show():
             if hero_pos in ["SB", "BB"]: 
                 chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="poker-chip"></div></div>'
             
-        if rot[0] == btn_pos:
+        if rot[0] == "BTN":
             hero_bs = get_btn_style(0)
             chips_html += f'<div class="dealer-button" style="{hero_bs}">D</div>'
 
