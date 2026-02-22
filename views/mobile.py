@@ -113,48 +113,16 @@ def show():
     data = ranges_db[src][sc][sp]
     r_data = data.get("ranges", data)
     
-    u = sp.upper()
-    hero_pos = "EP"
-    if u.startswith("EP") or u.startswith("UTG"): hero_pos = "EP"
-    elif u.startswith("MP"): hero_pos = "MP"
-    elif u.startswith("CO"): hero_pos = "CO"
-    elif u.startswith("BU") or u.startswith("BTN"): hero_pos = "BTN"
-    elif u.startswith("SB"): hero_pos = "SB"
-    elif u.startswith("BB"): hero_pos = "BB"
+    # 1. ЧИСТОЕ ЧТЕНИЕ ИЗ JSON
+    setup = data.get("setup", {})
+    hero_pos = setup.get("hero_pos", "EP")
+    villain_pos = setup.get("villain_pos")
+    btn_pos = setup.get("btn_pos", "BTN")
+    display_hero_bet = setup.get("hero_bet")
+    display_villain_bet = setup.get("villain_bet")
+    is_3bet_pot = setup.get("is_3bet_pot", False)
 
-    is_bb_def = bool("bb def" in sc.lower() or "bbvsbu" in sp.lower())
-    is_3bet_pot = bool("3bet" in sc.lower() or ("vs" in sp.lower() and not is_bb_def))
-    is_defense = is_bb_def or is_3bet_pot
-    
-    villain_pos = None
-    if is_bb_def:
-        villain_pos = "BTN"
-    elif is_3bet_pot:
-        v = sp.split()[-1].upper()
-        if "/" in v: v = "BTN" if "BU" in v else "CO"
-        if v == "BU": v = "BTN"
-        if v == "BLINDS": v = random.choice(["SB", "BB"])
-        villain_pos = v
-            
-    display_hero_bet = None
-    display_villain_bet = None
-    
-    if is_bb_def:
-        display_hero_bet = 1.0
-        display_villain_bet = 2.5
-    elif is_3bet_pot:
-        display_hero_bet = 2.5 
-        clean_sp = sp.replace(" ", "").lower()
-        if "sb" in clean_sp and "3betbb" in clean_sp: display_villain_bet = 9.0
-        elif "bu" in clean_sp and "3betsb" in clean_sp: display_villain_bet = 12.0
-        elif "bu" in clean_sp and "3betbb" in clean_sp: display_villain_bet = 12.0
-        elif "co" in clean_sp and "3betsb" in clean_sp: display_villain_bet = 12.0
-        elif "co" in clean_sp and "3betbb" in clean_sp: display_villain_bet = 12.0
-        elif "co" in clean_sp and "3betbu" in clean_sp: display_villain_bet = 7.5
-        elif "ep" in clean_sp and ("co/bu" in clean_sp or "cobu" in clean_sp): display_villain_bet = 7.5
-        elif "ep" in clean_sp and "mp" in clean_sp: display_villain_bet = 7.5
-        elif "ep" in clean_sp and "blinds" in clean_sp: display_villain_bet = 12.0
-        else: display_villain_bet = 9.0
+    is_defense = bool(villain_pos is not None or "call" in r_data or "Call" in r_data)
 
     rng = st.session_state.rng
     correct_act = "FOLD"
@@ -198,10 +166,10 @@ def show():
         p = rot[i]
         
         has_cards = False
-        if p == villain_pos: 
-            has_cards = True
-        if order.index(p) > order.index(hero_pos): 
-            has_cards = True
+        if is_defense:
+            if p == villain_pos: has_cards = True
+        else:
+            if order.index(p) > order.index(hero_pos): has_cards = True
             
         cls = "seat-active" if has_cards else "seat-folded"
         cards = '<div class="opp-cards-mob"></div>' if has_cards else ""
