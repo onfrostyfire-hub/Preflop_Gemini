@@ -96,8 +96,11 @@ def get_weight(hand, range_str):
     for item in items:
         if ':' in item:
             h_part, w_part = item.split(':')
-            weight = float(w_part)
-            if weight <= 1.0: weight *= 100
+            try:
+                weight = float(w_part)
+                if weight <= 1.0: weight *= 100
+            except:
+                weight = 100.0
         else:
             h_part = item
             weight = 100.0
@@ -175,7 +178,7 @@ def render_range_matrix(spot_data, target_hand=None):
                     stops.append(f"#2c3034 {curr_pct}%")
                     stops.append(f"#2c3034 100%")
                 
-                # Поменяли 'to top' на 'to right'
+                # Линейный градиент слева направо (to right)
                 bg = f"linear-gradient(to right, {', '.join(stops)})"
             
             style += f"background:{bg};"
