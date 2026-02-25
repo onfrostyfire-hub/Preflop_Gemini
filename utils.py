@@ -148,6 +148,13 @@ def render_range_matrix(spot_data, target_hand=None):
             raise_w = w_4 if w_4 > 0 else w_f
             call_w = w_c
             
+            # Защита от кривых весов: если сумма рейза и колла больше 100%, 
+            # мы пропорционально их сжимаем, чтобы не сломать заливку
+            total_w = raise_w + call_w
+            if total_w > 100:
+                raise_w = (raise_w / total_w) * 100
+                call_w = (call_w / total_w) * 100
+            
             style = "aspect-ratio:1;display:flex;justify-content:center;align-items:center;font-size:7px;cursor:default;color:#fff;"
             
             if raise_w == 0 and call_w == 0:
@@ -159,26 +166,26 @@ def render_range_matrix(spot_data, target_hand=None):
                 bg = "#28a745"
             else:
                 stops = []
-                curr_pct = 0
+                curr_pct = 0.0
                 
-                # Сначала идет заливка Рейза (Красный/Розовый) слева направо
+                # Сначала рисуем Рейз (Красный) слева
                 if raise_w > 0:
                     stops.append(f"#d63384 {curr_pct}%")
                     curr_pct += raise_w
                     stops.append(f"#d63384 {curr_pct}%")
                 
-                # Затем идет заливка Колла (Зеленый)
+                # За ним рисуем Колл (Зеленый)
                 if call_w > 0:
                     stops.append(f"#28a745 {curr_pct}%")
                     curr_pct += call_w
                     stops.append(f"#28a745 {curr_pct}%")
                 
-                # Остаток заполняем фолдом (Серый)
+                # Пустой остаток заливаем Фолдом (Серый)
                 if curr_pct < 100:
                     stops.append(f"#2c3034 {curr_pct}%")
                     stops.append(f"#2c3034 100%")
                 
-                # Линейный градиент слева направо (to right)
+                # Горизонтальный градиент слева направо
                 bg = f"linear-gradient(to right, {', '.join(stops)})"
             
             style += f"background:{bg};"
