@@ -76,7 +76,7 @@ def delete_history(days=None):
         df["Date"] = pd.to_datetime(df["Date"])
         now = datetime.now()
         cutoff = now - timedelta(days=days)
-        df_new = df[df["Date"] < cutoff]
+        df_new = df[df["Date"] >= cutoff] 
     df_new.to_csv(HISTORY_FILE, index=False)
 
 def update_srs_smart(spot_id, hand, rating):
@@ -142,37 +142,60 @@ def render_range_matrix(spot_data, target_hand=None):
             w_4 = get_weight(h, r_raise)
             w_f = get_weight(h, r_full)
             
+            raise_w = w_4 if w_4 > 0 else w_f
+            call_w = w_c
+            
             style = "aspect-ratio:1;display:flex;justify-content:center;align-items:center;font-size:7px;cursor:default;color:#fff;"
-            bg = "#2c3034"
-            if w_4 > 0 or w_c > 0:
-                if w_4 > 0 and w_c > 0: bg = "linear-gradient(135deg, #d63384 50%, #28a745 50%)"
-                elif w_4 > 0 and w_4 < 100: bg = "linear-gradient(135deg, #d63384 50%, #2c3034 50%)"
-                elif w_c > 0 and w_c < 100: bg = "linear-gradient(135deg, #28a745 50%, #2c3034 50%)"
-                elif w_4 >= 100: bg = "#d63384"
-                elif w_c >= 100: bg = "#28a745"
-            elif w_f > 0:
-                if w_f < 100: bg = "linear-gradient(135deg, #28a745 50%, #2c3034 50%)"
-                else: bg = "#28a745"
-            else: style += "color:#495057;"
+            
+            if raise_w == 0 and call_w == 0:
+                bg = "#2c3034"
+                style += "color:#495057;"
+            elif raise_w >= 100:
+                bg = "#d63384"
+            elif call_w >= 100:
+                bg = "#28a745"
+            else:
+                stops = []
+                curr_pct = 0
+                
+                # Сначала идет заливка Рейза (Красный/Розовый) слева направо
+                if raise_w > 0:
+                    stops.append(f"#d63384 {curr_pct}%")
+                    curr_pct += raise_w
+                    stops.append(f"#d63384 {curr_pct}%")
+                
+                # Затем идет заливка Колла (Зеленый)
+                if call_w > 0:
+                    stops.append(f"#28a745 {curr_pct}%")
+                    curr_pct += call_w
+                    stops.append(f"#28a745 {curr_pct}%")
+                
+                # Остаток заполняем фолдом (Серый)
+                if curr_pct < 100:
+                    stops.append(f"#2c3034 {curr_pct}%")
+                    stops.append(f"#2c3034 100%")
+                
+                # Поменяли 'to top' на 'to right'
+                bg = f"linear-gradient(to right, {', '.join(stops)})"
+            
             style += f"background:{bg};"
             if target_hand and h == target_hand: style += "border:1.5px solid #ffc107;z-index:10;box-shadow: 0 0 4px #ffc107;"
             grid_html += f'<div style="{style}">{h}</div>'
     grid_html += '</div>'
 
-    # --- ОТРИСОВКА СТАТИСТИКИ ---
     stats = spot_data.get("stats", {})
     if stats:
         stats_html = '<div style="display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; font-size:12px; font-weight:bold; font-family:sans-serif;">'
         for k, v in stats.items():
             kl = k.lower()
             if "raise" in kl or "3bet" in kl or "4bet" in kl or "pfr" in kl:
-                color = "#d63384" # Розовый/Красный
+                color = "#d63384" 
             elif "call" in kl:
-                color = "#28a745" # Зеленый
+                color = "#28a745" 
             elif "fold" in kl:
-                color = "#6c757d" # Серый
+                color = "#6c757d" 
             else:
-                color = "#adb5bd" # Дефолтный
+                color = "#adb5bd" 
             stats_html += f'<div style="background:#222; border:1px solid {color}; color:{color}; padding:4px 10px; border-radius:6px; box-shadow: 0 2px 4px rgba(0,0,0,0.4);">{k} {v}</div>'
         stats_html += '</div>'
         grid_html += stats_html
