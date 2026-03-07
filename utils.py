@@ -4,12 +4,33 @@ import pandas as pd
 import os
 import random
 from datetime import datetime, timedelta
+import gspread
+from google.oauth2.service_account import Credentials
 
 SPOTS_DIR = 'spots_data'
-HISTORY_FILE = 'history_log.csv'
-SRS_FILE = 'srs_data.json'
-SETTINGS_FILE = 'user_settings.json'
 RANKS = 'AKQJT98765432'
+
+# --- GOOGLE SHEETS SETUP ---
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+SPREADSHEET_ID = '15ouWJYZuQET1-sy7k5Wrn1fAzNUX6ssk5K8SOM9uYOc'
+
+@st.cache_resource
+def get_gspread_client():
+    try:
+        # Читаем секретный JSON из настроек Streamlit
+        creds_dict = json.loads(st.secrets["GOOGLE_JSON"])
+        credentials = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        return gspread.authorize(credentials)
+    except Exception as e:
+        st.error(f"Ошибка подключения к Google Sheets: Проверь секреты в Streamlit! {e}")
+        st.stop()
+
+def get_sheet(sheet_name):
+    client = get_gspread_client()
+    return client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
 
 ALL_HANDS = []
 for i, r1 in enumerate(RANKS):
@@ -44,40 +65,26 @@ def get_filtered_pool(ranges_db, selected_sources, selected_scenarios):
                 pool.append(f"{src}|{sc}|{sp}")
     return pool
 
+# --- ОБЛАЧНЫЕ ФУНКЦИИ БАЗЫ ДАННЫХ ---
+
 def load_srs_data():
-    if not os.path.exists(SRS_FILE): return {}
-    with open(SRS_FILE, 'r', encoding='utf-8') as f: return json.load(f)
+    try:
+        sheet = get_sheet("SRS")
+        vals = sheet.get_all_values()
+        if not vals or len(vals) < 2: return {}
+        return {str(row[0]): int(row[1]) for row in vals[1:] if len(row) >= 2 and row[1].isdigit()}
+    except Exception as e:
+        st.warning(f"Ошибка загрузки SRS: {e}")
+        return {}
 
 def save_srs_data(data):
-    with open(SRS_FILE, 'w', encoding='utf-8') as f: json.dump(data, f)
-
-def load_user_settings():
-    if not os.path.exists(SETTINGS_FILE): return {}
-    with open(SETTINGS_FILE, 'r', encoding='utf-8') as f: return json.load(f)
-
-def save_user_settings(settings):
-    with open(SETTINGS_FILE, 'w', encoding='utf-8') as f: json.dump(settings, f)
-
-def load_history():
-    if os.path.exists(HISTORY_FILE): return pd.read_csv(HISTORY_FILE)
-    return pd.DataFrame(columns=["Date", "Spot", "Hand", "Result", "CorrectAction"])
-
-def save_to_history(record):
-    df_new = pd.DataFrame([record])
-    if not os.path.exists(HISTORY_FILE): df_new.to_csv(HISTORY_FILE, index=False)
-    else: df_new.to_csv(HISTORY_FILE, mode='a', header=False, index=False)
-
-def delete_history(days=None):
-    if not os.path.exists(HISTORY_FILE): return
-    df = pd.read_csv(HISTORY_FILE)
-    if df.empty: return
-    if days is None: df_new = pd.DataFrame(columns=df.columns)
-    else:
-        df["Date"] = pd.to_datetime(df["Date"])
-        now = datetime.now()
-        cutoff = now - timedelta(days=days)
-        df_new = df[df["Date"] >= cutoff] 
-    df_new.to_csv(HISTORY_FILE, index=False)
+    try:
+        sheet = get_sheet("SRS")
+        rows = [["Key", "Weight"]] + [[k, v] for k, v in data.items()]
+        sheet.clear()
+        sheet.update(values=rows, range_name="A1")
+    except Exception as e:
+        st.error(f"Ошибка сохранения SRS: {e}")
 
 def update_srs_smart(spot_id, hand, rating):
     data = load_srs_data()
@@ -88,6 +95,73 @@ def update_srs_smart(spot_id, hand, rating):
     elif rating == 'easy': w /= 4.0
     data[key] = int(max(1, min(w, 2000)))
     save_srs_data(data)
+
+def load_user_settings():
+    try:
+        sheet = get_sheet("Settings")
+        val = sheet.acell('A1').value
+        return json.loads(val) if val else {}
+    except:
+        return {}
+
+def save_user_settings(settings):
+    try:
+        sheet = get_sheet("Settings")
+        sheet.update_acell('A1', json.dumps(settings))
+    except Exception as e:
+        st.error(f"Ошибка сохранения настроек: {e}")
+
+def load_history():
+    try:
+        sheet = get_sheet("History")
+        vals = sheet.get_all_values()
+        if not vals or len(vals) < 2:
+            return pd.DataFrame(columns=["Date", "Spot", "Hand", "Result", "CorrectAction"])
+        headers = vals[0]
+        data = vals[1:]
+        return pd.DataFrame(data, columns=headers)
+    except Exception as e:
+        return pd.DataFrame(columns=["Date", "Spot", "Hand", "Result", "CorrectAction"])
+
+def save_to_history(record):
+    try:
+        sheet = get_sheet("History")
+        vals = sheet.get_all_values()
+        if not vals:
+            sheet.append_row(["Date", "Spot", "Hand", "Result", "CorrectAction"])
+        
+        row = [
+            str(record.get("Date", "")),
+            str(record.get("Spot", "")),
+            str(record.get("Hand", "")),
+            str(record.get("Result", "")),
+            str(record.get("CorrectAction", ""))
+        ]
+        sheet.append_row(row)
+    except Exception as e:
+        st.error(f"Ошибка записи истории: {e}")
+
+def delete_history(days=None):
+    try:
+        sheet = get_sheet("History")
+        if days is None:
+            sheet.clear()
+            sheet.append_row(["Date", "Spot", "Hand", "Result", "CorrectAction"])
+        else:
+            df = load_history()
+            if df.empty: return
+            df["Date"] = pd.to_datetime(df["Date"])
+            now = datetime.now()
+            cutoff = now - timedelta(days=days)
+            df_new = df[df["Date"] >= cutoff] 
+            
+            sheet.clear()
+            rows = [["Date", "Spot", "Hand", "Result", "CorrectAction"]] + df_new.astype(str).values.tolist()
+            sheet.update(values=rows, range_name="A1")
+    except Exception as e:
+        st.error(f"Ошибка удаления истории: {e}")
+
+# --- МАТЕМАТИКА И ОТРИСОВКА ---
 
 def get_weight(hand, range_str):
     if not range_str or not isinstance(range_str, str): return 0.0
@@ -148,8 +222,6 @@ def render_range_matrix(spot_data, target_hand=None):
             raise_w = w_4 if w_4 > 0 else w_f
             call_w = w_c
             
-            # Защита от кривых весов: если сумма рейза и колла больше 100%, 
-            # мы пропорционально их сжимаем, чтобы не сломать заливку
             total_w = raise_w + call_w
             if total_w > 100:
                 raise_w = (raise_w / total_w) * 100
@@ -168,24 +240,20 @@ def render_range_matrix(spot_data, target_hand=None):
                 stops = []
                 curr_pct = 0.0
                 
-                # Сначала рисуем Рейз (Красный) слева
                 if raise_w > 0:
                     stops.append(f"#d63384 {curr_pct}%")
                     curr_pct += raise_w
                     stops.append(f"#d63384 {curr_pct}%")
                 
-                # За ним рисуем Колл (Зеленый)
                 if call_w > 0:
                     stops.append(f"#28a745 {curr_pct}%")
                     curr_pct += call_w
                     stops.append(f"#28a745 {curr_pct}%")
                 
-                # Пустой остаток заливаем Фолдом (Серый)
                 if curr_pct < 100:
                     stops.append(f"#2c3034 {curr_pct}%")
                     stops.append(f"#2c3034 100%")
                 
-                # Горизонтальный градиент слева направо
                 bg = f"linear-gradient(to right, {', '.join(stops)})"
             
             style += f"background:{bg};"
