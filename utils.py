@@ -10,7 +10,7 @@ from google.oauth2.service_account import Credentials
 SPOTS_DIR = 'spots_data'
 RANKS = 'AKQJT98765432'
 
-# --- GOOGLE SHEETS SETUP ---
+# --- GOOGLE SHEETS CORE ---
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
@@ -27,15 +27,145 @@ def get_gspread_client():
         st.error(f"Ошибка подключения к Google Sheets: Проверь секреты в Streamlit! {e}")
         st.stop()
 
-def get_sheet(sheet_name):
+# Кэшируем сами листы таблицы, чтобы убить скрытые запросы метаданных!
+@st.cache_resource
+def get_worksheets():
     client = get_gspread_client()
-    return client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
+    sh = client.open_by_key(SPREADSHEET_ID)
+    return {
+        "SRS": sh.worksheet("SRS"),
+        "Settings": sh.worksheet("Settings"),
+        "History": sh.worksheet("History")
+    }
 
-ALL_HANDS = []
-for i, r1 in enumerate(RANKS):
-    for j, r2 in enumerate(RANKS):
-        if i < j: ALL_HANDS.append(r1 + r2 + 's'); ALL_HANDS.append(r1 + r2 + 'o')
-        elif i == j: ALL_HANDS.append(r1 + r2)
+# --- ИНИЦИАЛИЗАЦИЯ (СТРОГО ОДНО ЧТЕНИЕ ЗА СЕССИЮ) ---
+def init_cloud_data():
+    if "app_initialized" not in st.session_state:
+        sheets = get_worksheets()
+        
+        # 1. Загружаем веса SRS в память
+        try:
+            srs_vals = sheets["SRS"].get_all_values()
+            st.session_state["srs_data"] = {str(r[0]): int(r[1]) for r in srs_vals[1:]} if len(srs_vals) > 1 else {}
+        except:
+            st.session_state["srs_data"] = {}
+            
+        # 2. Загружаем Настройки в память
+        try:
+            set_val = sheets["Settings"].acell('A1').value
+            st.session_state["user_settings"] = json.loads(set_val) if set_val else {}
+        except:
+            st.session_state["user_settings"] = {}
+            
+        # Буферы для записи
+        st.session_state["history_buffer"] = []
+        st.session_state["unsaved_count"] = 0
+        st.session_state["app_initialized"] = True
+
+# --- БЕСКОНТАКТНЫЕ ФУНКЦИИ (0 API-ЗАПРОСОВ НА ЧТЕНИЕ ПРИ ИГРЕ) ---
+
+def load_srs_data():
+    init_cloud_data()
+    return st.session_state.get("srs_data", {})
+
+def update_srs_smart(spot_id, hand, rating):
+    init_cloud_data()
+    data = st.session_state["srs_data"]
+    key = f"{spot_id}_{hand}"
+    w = data.get(key, 100)
+    
+    if rating == 'hard': w *= 2.5
+    elif rating == 'normal': w = w / 1.5 if w > 100 else w * 1.2
+    elif rating == 'easy': w /= 4.0
+    
+    data[key] = int(max(1, min(w, 2000)))
+    st.session_state["unsaved_count"] += 1
+    check_auto_sync()
+
+def load_user_settings():
+    init_cloud_data()
+    return st.session_state.get("user_settings", {})
+
+def save_user_settings(settings):
+    init_cloud_data()
+    st.session_state["user_settings"] = settings
+    try:
+        # Пишем в фон, даже если Гугл заглючит - в памяти всё останется
+        get_worksheets()["Settings"].update_acell('A1', json.dumps(settings))
+    except:
+        pass
+
+def save_to_history(record):
+    init_cloud_data()
+    row = [
+        str(record.get("Date", "")),
+        str(record.get("Spot", "")),
+        str(record.get("Hand", "")),
+        str(record.get("Result", "")),
+        str(record.get("CorrectAction", ""))
+    ]
+    st.session_state["history_buffer"].append(row)
+    st.session_state["unsaved_count"] += 1
+    check_auto_sync()
+
+def check_auto_sync():
+    # Отправляем пачку каждые 5 действий (2-3 раздачи)
+    if st.session_state["unsaved_count"] >= 5:
+        force_sync()
+
+def force_sync():
+    if st.session_state.get("unsaved_count", 0) == 0: return
+    sheets = get_worksheets()
+    try:
+        # Выгружаем веса
+        if "srs_data" in st.session_state:
+            rows = [["Key", "Weight"]] + [[k, v] for k, v in st.session_state["srs_data"].items()]
+            sheets["SRS"].update(values=rows, range_name="A1")
+
+        # Выгружаем историю пачкой
+        if "history_buffer" in st.session_state and st.session_state["history_buffer"]:
+            sheets["History"].append_rows(st.session_state["history_buffer"])
+            st.session_state["history_buffer"] = []
+
+        st.session_state["unsaved_count"] = 0
+    except:
+        pass
+
+@st.cache_data(ttl=60)
+def load_history():
+    try:
+        vals = get_worksheets()["History"].get_all_values()
+        if not vals or len(vals) < 2:
+            return pd.DataFrame(columns=["Date", "Spot", "Hand", "Result", "CorrectAction"])
+        return pd.DataFrame(vals[1:], columns=vals[0])
+    except:
+        return pd.DataFrame(columns=["Date", "Spot", "Hand", "Result", "CorrectAction"])
+
+def delete_history(days=None):
+    try:
+        sheets = get_worksheets()
+        if days is None:
+            sheets["History"].clear()
+            sheets["History"].append_row(["Date", "Spot", "Hand", "Result", "CorrectAction"])
+        else:
+            df = load_history()
+            if df.empty: return
+            df["Date"] = pd.to_datetime(df["Date"])
+            now = datetime.now()
+            cutoff = now - timedelta(days=days)
+            df_new = df[df["Date"] >= cutoff] 
+            
+            sheets["History"].clear()
+            rows = [["Date", "Spot", "Hand", "Result", "CorrectAction"]] + df_new.astype(str).values.tolist()
+            sheets["History"].update(values=rows, range_name="A1")
+        
+        load_history.clear()
+        if "history_buffer" in st.session_state:
+            st.session_state["history_buffer"] = []
+    except Exception as e:
+        st.error(f"Ошибка удаления истории: {e}")
+
+# --- ПАРСИНГ РЕНДЖЕЙ ---
 
 @st.cache_data(ttl=0)
 def load_ranges():
@@ -55,134 +185,11 @@ def load_ranges():
                     st.error(f"Ошибка чтения {file}: {e}")
     return db
 
-def get_filtered_pool(ranges_db, selected_sources, selected_scenarios):
-    pool = []
-    for src in selected_sources:
-        for sc in selected_scenarios:
-            if sc not in ranges_db.get(src, {}): continue
-            for sp in ranges_db[src][sc]:
-                pool.append(f"{src}|{sc}|{sp}")
-    return pool
-
-# --- БУФЕРНАЯ ОБЛАЧНАЯ БАЗА ДАННЫХ ---
-
-def init_cloud_data():
-    if "srs_data" not in st.session_state:
-        try:
-            vals = get_sheet("SRS").get_all_values()
-            st.session_state["srs_data"] = {str(r[0]): int(r[1]) for r in vals[1:]} if len(vals) > 1 else {}
-        except:
-            st.session_state["srs_data"] = {}
-            
-    if "history_buffer" not in st.session_state:
-        st.session_state["history_buffer"] = []
-        
-    if "unsaved_count" not in st.session_state:
-        st.session_state["unsaved_count"] = 0
-
-def load_srs_data():
-    init_cloud_data()
-    return st.session_state["srs_data"]
-
-def update_srs_smart(spot_id, hand, rating):
-    init_cloud_data()
-    data = st.session_state["srs_data"]
-    key = f"{spot_id}_{hand}"
-    w = data.get(key, 100)
-    
-    if rating == 'hard': w *= 2.5
-    elif rating == 'normal': w = w / 1.5 if w > 100 else w * 1.2
-    elif rating == 'easy': w /= 4.0
-    
-    data[key] = int(max(1, min(w, 2000)))
-    st.session_state["unsaved_count"] += 1
-    check_auto_sync()
-
-def save_to_history(record):
-    init_cloud_data()
-    row = [
-        str(record.get("Date", "")),
-        str(record.get("Spot", "")),
-        str(record.get("Hand", "")),
-        str(record.get("Result", "")),
-        str(record.get("CorrectAction", ""))
-    ]
-    st.session_state["history_buffer"].append(row)
-    st.session_state["unsaved_count"] += 1
-    check_auto_sync()
-
-def check_auto_sync():
-    # Ответ + Оценка = 2 действия. Синхронизируем каждые 5 раздач (10 действий)
-    if st.session_state["unsaved_count"] >= 10:
-        force_sync()
-
-def force_sync():
-    if st.session_state.get("unsaved_count", 0) == 0: return
-    try:
-        # Выгружаем веса одним обновлением
-        if "srs_data" in st.session_state:
-            rows = [["Key", "Weight"]] + [[k, v] for k, v in st.session_state["srs_data"].items()]
-            get_sheet("SRS").update(values=rows, range_name="A1")
-
-        # Выгружаем историю пачкой
-        if "history_buffer" in st.session_state and st.session_state["history_buffer"]:
-            get_sheet("History").append_rows(st.session_state["history_buffer"])
-            st.session_state["history_buffer"] = []
-
-        st.session_state["unsaved_count"] = 0
-    except Exception as e:
-        # Если Гугл лагает, просто проглатываем ошибку, буфер сохранится при следующем клике
-        pass
-
-@st.cache_data(ttl=600)
-def load_user_settings():
-    try:
-        val = get_sheet("Settings").acell('A1').value
-        return json.loads(val) if val else {}
-    except:
-        return {}
-
-def save_user_settings(settings):
-    try:
-        get_sheet("Settings").update_acell('A1', json.dumps(settings))
-        load_user_settings.clear()
-    except:
-        pass
-
-@st.cache_data(ttl=60)
-def load_history():
-    try:
-        vals = get_sheet("History").get_all_values()
-        if not vals or len(vals) < 2:
-            return pd.DataFrame(columns=["Date", "Spot", "Hand", "Result", "CorrectAction"])
-        return pd.DataFrame(vals[1:], columns=vals[0])
-    except:
-        return pd.DataFrame(columns=["Date", "Spot", "Hand", "Result", "CorrectAction"])
-
-def delete_history(days=None):
-    try:
-        sheet = get_sheet("History")
-        if days is None:
-            sheet.clear()
-            sheet.append_row(["Date", "Spot", "Hand", "Result", "CorrectAction"])
-        else:
-            df = load_history()
-            if df.empty: return
-            df["Date"] = pd.to_datetime(df["Date"])
-            now = datetime.now()
-            cutoff = now - timedelta(days=days)
-            df_new = df[df["Date"] >= cutoff] 
-            
-            sheet.clear()
-            rows = [["Date", "Spot", "Hand", "Result", "CorrectAction"]] + df_new.astype(str).values.tolist()
-            sheet.update(values=rows, range_name="A1")
-        
-        load_history.clear()
-        st.session_state["history_buffer"] = []
-    except Exception as e:
-        st.error(f"Ошибка удаления истории: {e}")
-
-# --- МАТЕМАТИКА И ОТРИСОВКА ---
+ALL_HANDS = []
+for i, r1 in enumerate(RANKS):
+    for j, r2 in enumerate(RANKS):
+        if i < j: ALL_HANDS.append(r1 + r2 + 's'); ALL_HANDS.append(r1 + r2 + 'o')
+        elif i == j: ALL_HANDS.append(r1 + r2)
 
 def get_weight(hand, range_str):
     if not range_str or not isinstance(range_str, str): return 0.0
@@ -260,21 +267,17 @@ def render_range_matrix(spot_data, target_hand=None):
             else:
                 stops = []
                 curr_pct = 0.0
-                
                 if raise_w > 0:
                     stops.append(f"#d63384 {curr_pct}%")
                     curr_pct += raise_w
                     stops.append(f"#d63384 {curr_pct}%")
-                
                 if call_w > 0:
                     stops.append(f"#28a745 {curr_pct}%")
                     curr_pct += call_w
                     stops.append(f"#28a745 {curr_pct}%")
-                
                 if curr_pct < 100:
                     stops.append(f"#2c3034 {curr_pct}%")
                     stops.append(f"#2c3034 100%")
-                
                 bg = f"linear-gradient(to right, {', '.join(stops)})"
             
             style += f"background:{bg};"
