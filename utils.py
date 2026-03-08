@@ -20,7 +20,6 @@ SPREADSHEET_ID = '15ouWJYZuQET1-sy7k5Wrn1fAzNUX6ssk5K8SOM9uYOc'
 @st.cache_resource
 def get_gspread_client():
     try:
-        # Читаем секретный JSON из настроек Streamlit
         creds_dict = json.loads(st.secrets["GOOGLE_JSON"])
         credentials = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         return gspread.authorize(credentials)
@@ -65,8 +64,9 @@ def get_filtered_pool(ranges_db, selected_sources, selected_scenarios):
                 pool.append(f"{src}|{sc}|{sp}")
     return pool
 
-# --- ОБЛАЧНЫЕ ФУНКЦИИ БАЗЫ ДАННЫХ ---
+# --- ОБЛАЧНЫЕ ФУНКЦИИ БАЗЫ ДАННЫХ (С КЭШИРОВАНИЕМ) ---
 
+@st.cache_data(ttl=3600)
 def load_srs_data():
     try:
         sheet = get_sheet("SRS")
@@ -83,11 +83,12 @@ def save_srs_data(data):
         rows = [["Key", "Weight"]] + [[k, v] for k, v in data.items()]
         sheet.clear()
         sheet.update(values=rows, range_name="A1")
+        load_srs_data.clear() # Сбрасываем кэш после записи
     except Exception as e:
         st.error(f"Ошибка сохранения SRS: {e}")
 
 def update_srs_smart(spot_id, hand, rating):
-    data = load_srs_data()
+    data = load_srs_data().copy()
     key = f"{spot_id}_{hand}"
     w = data.get(key, 100)
     if rating == 'hard': w *= 2.5
@@ -96,6 +97,7 @@ def update_srs_smart(spot_id, hand, rating):
     data[key] = int(max(1, min(w, 2000)))
     save_srs_data(data)
 
+@st.cache_data(ttl=3600)
 def load_user_settings():
     try:
         sheet = get_sheet("Settings")
@@ -108,9 +110,11 @@ def save_user_settings(settings):
     try:
         sheet = get_sheet("Settings")
         sheet.update_acell('A1', json.dumps(settings))
+        load_user_settings.clear()
     except Exception as e:
         st.error(f"Ошибка сохранения настроек: {e}")
 
+@st.cache_data(ttl=3600)
 def load_history():
     try:
         sheet = get_sheet("History")
@@ -138,6 +142,7 @@ def save_to_history(record):
             str(record.get("CorrectAction", ""))
         ]
         sheet.append_row(row)
+        load_history.clear()
     except Exception as e:
         st.error(f"Ошибка записи истории: {e}")
 
@@ -158,6 +163,7 @@ def delete_history(days=None):
             sheet.clear()
             rows = [["Date", "Spot", "Hand", "Result", "CorrectAction"]] + df_new.astype(str).values.tolist()
             sheet.update(values=rows, range_name="A1")
+        load_history.clear()
     except Exception as e:
         st.error(f"Ошибка удаления истории: {e}")
 
