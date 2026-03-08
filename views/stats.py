@@ -7,12 +7,21 @@ def show():
     st.markdown("## 📊 Statistics Hub")
     
     df = utils.load_history()
+    
+    # Проверка на пустую таблицу или отсутствие нужных колонок
+    if df.empty or "Date" not in df.columns or "Result" not in df.columns:
+        st.info("История пуста. Иди тренируйся, Начальник!")
+        return
+
+    # ЖЕСТКАЯ КОНВЕРТАЦИЯ (Гугл отдает всё строками, нам нужны числа и даты)
+    df["Date"] = pd.to_datetime(df["Date"], errors='coerce')
+    df = df.dropna(subset=["Date"]) # Выкидываем битые строки, если они как-то попали в лог
+    df["Result"] = pd.to_numeric(df["Result"], errors='coerce').fillna(0).astype(int)
+    
     if df.empty:
         st.info("История пуста. Иди тренируйся, Начальник!")
         return
 
-    df["Date"] = pd.to_datetime(df["Date"])
-    
     with st.expander("🔍 Фильтры", expanded=True):
         c1, c2, c3 = st.columns(3)
         time_filter = c1.selectbox("Период", ["All Time", "24 Hours", "7 Days", "30 Days", "1 Year"])
@@ -58,6 +67,7 @@ def show():
         d = df.copy()
         d["Result"] = d["Result"].apply(lambda x: "✅" if x==1 else "❌")
         d = d.sort_values("Date", ascending=False)
+        d["Date"] = d["Date"].dt.strftime("%Y-%m-%d %H:%M:%S")
         st.dataframe(d[["Date", "Spot", "Hand", "CorrectAction", "Result"]], use_container_width=True, hide_index=True)
 
     st.divider()
