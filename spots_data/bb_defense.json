@@ -14,7 +14,7 @@
     },
     "BBvsBU x2.5 nl500": {
       "setup": { "hero_pos": "BB", "villain_pos": "BTN", "btn_pos": "BTN", "hero_bet": 1.0, "villain_bet": 2.5, "is_3bet_pot": false },
-      "stats": { "3bet": "14%", "Call": "30%", "Fold": "56%" },
+      "stats": { "3bet": "12%", "Call": "31%", "Fold": "57%" },
       "ranges": {
         "source": "ALL",
         "call": "99:0.25,88:0.5,66,55,44,33,22,AJo:0.75,ATo,A9,A8,A7,A6s,A5o,A4o,A3s,A2s,KQo:0.75,KJo,KTs:0.5,KTo,K9s:0.5,K9o,K8s:0.5,K7s:0.5,K6s:0.5,K5s,K4s,K3s,K2s,QJo,QTs:0.5,QTo,Q9s:0.5,Q9o,Q8s:0.5,Q7s,Q6s,Q5s,Q4s,Q3s,Q2s,JTo,J9s:0.5,J9o,J8s:0.5,J7s,J6s,J5s,J4s,J3s,J2s,T9o,T8:0.5,T7s,T6s,T5s:0.5,98o:0.5,97s:0.5,96s,87o:0.5,86s,85s,75s,74s,64s,63s,53s,52s,43s,42s",
