@@ -14,28 +14,29 @@ def show():
         .call-btn button { background: #28a745; color: white; box-shadow: 0 4px 0 #1e7e34; }
         .raise-btn button { background: #d63384; color: white; box-shadow: 0 4px 0 #a02561; }
         .open-raise-btn button { background: #2e7d32; color: white; box-shadow: 0 4px 0 #1b5e20; }
-        .mobile-game-area { position: relative; width: 100%; height: 280px; margin: 0 auto; background: radial-gradient(ellipse at center, #2e7d32 0%, #1b5e20 100%); border: 8px solid #4a1c1c; border-radius: 120px; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
-        .m-table-info { position: absolute; top: 15%; width: 100%; text-align: center; }
-        .m-info-spot { font-size: 16px; font-weight: 800; color: rgba(255,255,255,0.3); line-height: 1.1; padding: 0 20px; }
-        .m-seat { position: absolute; width: 50px; height: 50px; background: #343a40; border: 2px solid #495057; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5; }
-        .m-seat-label { font-size: 10px; font-weight: bold; color: #adb5bd; margin-bottom: 1px; }
-        .m-seat-amount { font-size: 11px; font-weight: 800; color: #fff; }
-        .m-seat.hero { background: #007bff; border-color: #0056b3; box-shadow: 0 0 10px rgba(0,123,255,0.6); }
-        .m-seat.villain { background: #dc3545; border-color: #a71d2a; box-shadow: 0 0 10px rgba(220,53,69,0.6); }
-        .m-pos-btn { top: 82%; left: 50%; transform: translate(-50%, -50%); }
-        .m-pos-sb { top: 72%; left: 22%; transform: translate(-50%, -50%); }
-        .m-pos-bb { top: 50%; left: 12%; transform: translate(-50%, -50%); }
-        .m-pos-utg { top: 22%; left: 25%; transform: translate(-50%, -50%); }
-        .m-pos-mp { top: 18%; left: 50%; transform: translate(-50%, -50%); }
-        .m-pos-co { top: 25%; left: 78%; transform: translate(-50%, -50%); }
-        .m-cards-container { position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 4px; z-index: 10; }
-        .m-card { width: 45px; height: 65px; background: white; border-radius: 4px; border: 1px solid #999; display: flex; justify-content: center; align-items: center; font-size: 22px; font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.4); }
-        .m-card.red { color: #dc3545; }
-        .m-card.black { color: #212529; }
-        .m-dealer-btn { position: absolute; width: 18px; height: 18px; background: white; border-radius: 50%; border: 1px solid #333; color: black; font-weight: bold; font-size: 10px; display: flex; justify-content: center; align-items: center; z-index: 6; }
-        .m-chip { width: 16px; height: 16px; background: radial-gradient(circle, #ffeb3b, #fbc02d); border-radius: 50%; color: #000; font-weight: bold; font-size: 9px; display: flex; justify-content: center; align-items: center; z-index: 15; position: absolute; border: 1px solid #bfa006; }
-        .m-bet-txt { font-size: 11px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; background: rgba(0,0,0,0.6); padding: 1px 4px; border-radius: 4px; margin-top: -3px; z-index: 20; }
-        .srs-container button { height: 50px; font-size: 14px; border-radius: 8px; }
+        .mobile-game-area { position: relative; width: 100%; height: 280px; margin: 0 auto; background: radial-gradient(ellipse at center, #1b5e20 0%, #0a2e0b 100%); border: 6px solid #3e2723; border-radius: 140px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
+        .mob-info { position: absolute; top: 25%; width: 100%; text-align: center; pointer-events: none; }
+        .mob-info-src { font-size: 10px; color: #888; text-transform: uppercase; }
+        .mob-info-spot { font-size: 22px; font-weight: 900; color: rgba(255,255,255,0.15); }
+        .seat { position: absolute; width: 44px; height: 44px; background: #222; border: 1px solid #444; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5; }
+        .seat-label { font-size: 9px; color: #fff; font-weight: bold; margin-top: auto; margin-bottom: 2px; }
+        .seat-active { border-color: #ffc107; background: #2a2a2a; }
+        .seat-folded { opacity: 0.4; border-color: #333; }
+        .m-pos-1 { bottom: 20%; left: 5%; } .m-pos-2 { top: 20%; left: 5%; } .m-pos-3 { top: -15px; left: 50%; transform: translateX(-50%); } 
+        .m-pos-4 { top: 20%; right: 5%; } .m-pos-5 { bottom: 20%; right: 5%; }
+        .chip-container { position: absolute; z-index: 10; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+        .chip-mob { width: 14px; height: 14px; background: #111; border: 2px dashed #d32f2f; border-radius: 50%; box-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+        .chip-3bet { width: 16px; height: 16px; background: #d32f2f; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+        .dealer-mob { width: 16px; height: 16px; background: #ffc107; border-radius: 50%; color: #000; font-weight: bold; font-size: 9px; display: flex; justify-content: center; align-items: center; border: 1px solid #bfa006; position: absolute; z-index: 11; }
+        .bet-txt { font-size: 10px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; background: rgba(0,0,0,0.6); padding: 1px 3px; border-radius: 4px; margin-top: -5px; z-index: 20; }
+        .hero-mob { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 20; background: #222; padding: 5px 10px; border-radius: 12px; border: 1px solid #ffc107; }
+        .card-mob { width: 45px; height: 64px; background: white; border-radius: 4px; position: relative; color: black; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .tl-mob { position: absolute; top: 1px; left: 3px; font-weight: bold; font-size: 14px; line-height: 1; }
+        .c-mob { position: absolute; top: 55%; left: 50%; transform: translate(-50%,-50%); font-size: 26px; }
+        .suit-red { color: #d32f2f; } .suit-blue { color: #0056b3; } .suit-black { color: #111; }
+        .rng-badge { position: absolute; bottom: 50px; right: -15px; width: 30px; height: 30px; background: #6f42c1; border: 2px solid #fff; border-radius: 50%; color: white; font-weight: bold; font-size: 12px; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 40; }
+        .rng-hint { text-align: center; color: #888; font-size: 11px; margin-bottom: 5px; font-family: monospace; }
+        .srs-container button { height: 50px; font-size: 13px; background: #343a40; color: #aaa; border: 1px solid #555; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -47,217 +48,231 @@ def show():
         for sc, sp_dict in sc_dict.items():
             mapped_sc = sc
             sc_lower = sc.lower()
-            if "def" in sc_lower and "3bet" in sc_lower: mapped_sc = "Def vs 3bet"
-            elif "3bet" in sc_lower: mapped_sc = "3bet"
+            if "3bet" in sc_lower: mapped_sc = "Def vs 3bet"
             elif "pfr" in sc_lower or "bbvsbu" in sc_lower or "bb def" in sc_lower: mapped_sc = "BB def vs PFR"
             elif "open raise" in sc_lower: mapped_sc = "Open Raise"
             
             if mapped_sc not in scenario_map: scenario_map[mapped_sc] = []
             for sp in sp_dict.keys():
                 scenario_map[mapped_sc].append((sp, f"{src}|{sc}|{sp}"))
-
-    all_scenarios = ["Open Raise", "BB def vs PFR", "Def vs 3bet", "3bet"]
+                
+    all_scenarios = ["Open Raise", "BB def vs PFR", "Def vs 3bet"]
     all_scenarios = [s for s in all_scenarios if s in scenario_map]
 
-    with st.expander("⚙️ Фильтры", expanded=False):
+    with st.expander("⚙️ Настройки Фильтров", expanded=False):
         saved = utils.load_user_settings()
         
         saved_sc = [s for s in saved.get("scenarios", []) if s in all_scenarios]
         sel_sc = st.multiselect("Сценарий", all_scenarios, default=saved_sc if saved_sc else (all_scenarios[:1] if all_scenarios else []))
         
         sel_spots_keys = []
-        for sc in sel_sc:
-            opts = scenario_map[sc]
-            opts_names = [o[0] for o in opts]
-            saved_sp = [s for s in saved.get("spots", []) if s in opts_names]
-            sel = st.multiselect(sc, opts_names, default=saved_sp if saved_sp else opts_names)
-            sel_spots_keys.extend([o[1] for o in opts if o[0] in sel])
-
-        if sel_sc != saved.get("scenarios") or [k.split('|')[-1] for k in sel_spots_keys] != saved.get("spots"):
-            utils.save_user_settings({"scenarios": sel_sc, "spots": [k.split('|')[-1] for k in sel_spots_keys]})
-
-    if not sel_spots_keys: st.info("Выбери споты."); return
-
-    if "srs_mode" not in st.session_state:
-        st.session_state.srs_mode = False
-        st.session_state.hand = None
-        st.session_state.spot_key = None
-        st.session_state.msg = ""
-
-    def get_next():
-        srs = utils.load_srs_data()
-        w_pool = []
-        for pk in sel_spots_keys:
-            src, sc, sp = pk.split('|')
-            d = ranges_db[src][sc][sp]
-            r = d.get("ranges", {})
-            t = r.get("training", r.get("full", "ALL"))
-            hands = utils.parse_range_to_list(t)
-            sid = f"{src}_{sc}_{sp}".replace(" ","_")
-            for h in hands:
-                w_pool.append({"k": pk, "h": h, "w": srs.get(f"{sid}_{h}", 100)})
+        if sel_sc:
+            st.markdown("**Споты для тренировки:**")
+            saved_spots = saved.get("spots", [])
+            for sc in sel_sc:
+                st.markdown(f"<div style='color:#ffc107; font-size:14px; font-weight:bold; margin-top:8px;'>{sc}</div>", unsafe_allow_html=True)
+                for sp_name, sp_key in scenario_map[sc]:
+                    is_checked = (sp_key in saved_spots) if "spots" in saved else True
+                    if st.checkbox(sp_name, value=is_checked, key=f"m_chk_{sp_key}"):
+                        sel_spots_keys.append(sp_key)
         
-        if not w_pool: return None
-        tot = sum(x["w"] for x in w_pool)
-        r = random.uniform(0, tot)
-        c = 0
-        for x in w_pool:
-            c += x["w"]
-            if c >= r: return x
-        return w_pool[-1]
+        if st.button("🚀 Применить", use_container_width=True):
+            utils.save_user_settings({"scenarios": sel_sc, "spots": sel_spots_keys})
+            st.session_state.hand = None; st.rerun()
 
-    if not st.session_state.srs_mode and not st.session_state.hand:
-        nxt = get_next()
-        if nxt:
-            st.session_state.spot_key = nxt["k"]
-            st.session_state.hand = nxt["h"]
-        else:
-            st.warning("Нет рук"); return
+    pool = sel_spots_keys
+    if not pool:
+        st.warning("⚠️ Не выбран ни один спот. Открой '⚙️ Настройки Фильтров' и поставь галочки.")
+        st.stop()
 
-    src, sc, sp = st.session_state.spot_key.split('|')
+    if 'hand' not in st.session_state: st.session_state.hand = None
+    if 'rng' not in st.session_state: st.session_state.rng = 0
+    if 'suits' not in st.session_state: st.session_state.suits = None
+    if 'srs_mode' not in st.session_state: st.session_state.srs_mode = False
+    if 'last_error' not in st.session_state: st.session_state.last_error = False
+    if 'msg' not in st.session_state: st.session_state.msg = None
+    if 'current_spot_key' not in st.session_state: st.session_state.current_spot_key = None 
+
+    if st.session_state.hand is None or st.session_state.current_spot_key is None or st.session_state.current_spot_key not in pool:
+        chosen = random.choice(pool)
+        st.session_state.current_spot_key = chosen
+        src, sc, sp = chosen.split('|')
+        data = ranges_db[src][sc][sp]
+        r_data = data.get("ranges", data)
+        t_range = r_data.get("training", r_data.get("source", r_data.get("full", "")))
+        poss = utils.parse_range_to_list(t_range)
+        srs = utils.load_srs_data()
+        w = [srs.get(f"{src}_{sc}_{sp}_{h}".replace(" ","_"), 100) for h in poss]
+        st.session_state.hand = random.choices(poss, weights=w, k=1)[0]
+        st.session_state.rng = random.randint(0, 99)
+        ps = ['♠','♥','♦','♣']; s1 = random.choice(ps)
+        st.session_state.suits = [s1, s1 if 's' in st.session_state.hand else random.choice([x for x in ps if x!=s1])]
+        st.session_state.srs_mode = False
+
+    src, sc, sp = st.session_state.current_spot_key.split('|')
     data = ranges_db[src][sc][sp]
-    ranges = data.get("ranges", data)
+    r_data = data.get("ranges", data)
     
-    r_raise = ranges.get("4bet", ranges.get("3bet", ranges.get("Raise", "")))
-    r_call = ranges.get("call", ranges.get("Call", ""))
-    
-    w_raise_val = utils.get_weight(st.session_state.hand, r_raise)
-    w_c = utils.get_weight(st.session_state.hand, r_call)
-    
-    rng = random.uniform(0, 100)
-    w = w_raise_val + w_c
-    if w == 0:
-        correct_act = "FOLD"
-    elif w < 100 and rng > w:
-        correct_act = "FOLD"
-    else:
-        rng = random.uniform(0, w)
+    # 1. ЧИСТОЕ ЧТЕНИЕ ИЗ JSON
+    setup = data.get("setup", {})
+    hero_pos = setup.get("hero_pos", "EP")
+    villain_pos = setup.get("villain_pos")
+    btn_pos = setup.get("btn_pos", "BTN")
+    display_hero_bet = setup.get("hero_bet")
+    display_villain_bet = setup.get("villain_bet")
+    is_3bet_pot = setup.get("is_3bet_pot", False)
+
+    is_defense = bool(villain_pos is not None or "call" in r_data or "Call" in r_data)
+
+    rng = st.session_state.rng
+    correct_act = "FOLD"
+    r_call = r_data.get("call", r_data.get("Call", ""))
+    r_raise = r_data.get("4bet", r_data.get("3bet", r_data.get("Raise", "")))
+    r_full = r_data.get("full", r_data.get("Full", ""))
+
+    if is_defense:
+        w_c = utils.get_weight(st.session_state.hand, r_call)
+        w_raise_val = utils.get_weight(st.session_state.hand, r_raise)
         if rng < w_raise_val: correct_act = "RAISE"
         elif rng < (w_raise_val + w_c): correct_act = "CALL"
+    else:
+        w = utils.get_weight(st.session_state.hand, r_full)
+        if w > 0: correct_act = "RAISE"
+
+    h_val = st.session_state.hand; s1, s2 = st.session_state.suits
+    c1 = "suit-red" if s1 in '♥' else "suit-blue" if s1 in '♦' else "suit-black"
+    c2 = "suit-red" if s2 in '♥' else "suit-blue" if s2 in '♦' else "suit-black"
+
+    order = ["EP", "MP", "CO", "BTN", "SB", "BB"]
+    try: hero_idx = order.index(hero_pos)
+    except ValueError: hero_idx = 0
+    rot = order[hero_idx:] + order[:hero_idx]
+
+    def get_seat_style(idx):
+        return {0: "bottom: -20px; left: 50%; transform: translateX(-50%);", 1: "bottom: 15%; left: 0%;", 2: "top: 15%; left: 0%;", 
+                3: "top: -20px; left: 50%; transform: translateX(-50%);", 4: "top: 15%; right: 0%;", 5: "bottom: 15%; right: 0%;"}.get(idx, "")
+
+    def get_chip_style(idx):
+        return {0: "bottom: 25%; left: 50%; transform: translateX(-50%);", 1: "bottom: 22%; left: 22%;", 2: "top: 22%; left: 22%;",
+                3: "top: 25%; left: 50%; transform: translateX(-50%);", 4: "top: 22%; right: 22%;", 5: "bottom: 22%; right: 22%;"}.get(idx, "")
+
+    def get_btn_style(idx):
+        return {0: "bottom: 10%; left: 60%;", 1: "bottom: 25%; left: 16%;", 2: "top: 10%; left: 16%;",
+                3: "top: 10%; left: 60%;", 4: "top: 10%; right: 16%;", 5: "bottom: 25%; right: 16%;"}.get(idx, "")
+
+    opp_html = ""; chips_html = ""
+
+    for i in range(1, 6):
+        p = rot[i]
+        
+        has_cards = False
+        if is_defense:
+            if p == villain_pos: has_cards = True
         else:
-            if w > 0: correct_act = "RAISE"
-            else: correct_act = "FOLD"
+            if order.index(p) > order.index(hero_pos): has_cards = True
+            
+        cls = "seat-active" if has_cards else "seat-folded"
+        cards = '<div class="opp-cards-mob"></div>' if has_cards else ""
+        ss = get_seat_style(i)
+        opp_html += f'<div class="seat {cls}" style="{ss}">{cards}<span class="seat-label">{p}</span></div>'
+        
+        cs = get_chip_style(i)
+        if is_defense and p == villain_pos and display_villain_bet:
+            bet_txt = f'<div class="bet-txt">{display_villain_bet}bb</div>'
+            if is_3bet_pot:
+                chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-3bet"></div><div class="chip-3bet" style="margin-top:-12px;"></div>{bet_txt}</div>'
+            else:
+                chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-mob"></div><div class="chip-mob" style="margin-top:-5px;"></div>{bet_txt}</div>'
+        elif p in ["SB", "BB"]:
+            if not (is_defense and p == villain_pos):
+                chips_html += f'<div class="chip-container" style="{cs}"><div class="chip-mob"></div></div>'
+        
+        if p == "BTN":
+            bs = get_btn_style(i)
+            chips_html += f'<div class="dealer-mob" style="{bs}">D</div>'
 
-    hero = data.get("hero", "BTN")
-    villain = data.get("villain", "")
-    dealer = data.get("dealer", "BTN")
-    hero_bet = data.get("hero_bet", "")
-    villain_bet = data.get("villain_bet", "")
-
-    pos_map = {"BTN": "m-pos-btn", "SB": "m-pos-sb", "BB": "m-pos-bb", "UTG": "m-pos-utg", "MP": "m-pos-mp", "CO": "m-pos-co"}
-    dealer_coords = {"BTN": (80, 50), "SB": (68, 28), "BB": (45, 18), "UTG": (28, 30), "MP": (50, 24), "CO": (78, 28)}
-    dc = dealer_coords.get(dealer, (80, 50))
-
-    h_val = st.session_state.hand
-    c1, c2 = h_val[0], h_val[1]
-    suit = h_val[2] if len(h_val) > 2 else ""
-    if suit == 's': c1_s, c2_s = '♠', '♠'; c1_c, c2_c = 'black', 'black'
-    elif suit == 'o': c1_s, c2_s = '♠', '♥'; c1_c, c2_c = 'black', 'red'
-    else: c1_s, c2_s = '♠', '♠'; c1_c, c2_c = 'black', 'black'
+    hero_cs = get_chip_style(0)
+    if is_defense and display_hero_bet: 
+        bet_txt = f'<div class="bet-txt">{display_hero_bet}bb</div>'
+        if display_hero_bet == 1.0:
+            chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="chip-mob"></div>{bet_txt}</div>'
+        else:
+            chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="chip-mob"></div><div class="chip-mob" style="margin-top:-5px;"></div>{bet_txt}</div>'
+    else:
+        if hero_pos in ["SB", "BB"]: 
+            chips_html += f'<div class="chip-container" style="{hero_cs}"><div class="chip-mob"></div></div>'
+        
+    if rot[0] == "BTN":
+        hero_bs = get_btn_style(0)
+        chips_html += f'<div class="dealer-mob" style="{hero_bs}">D</div>'
 
     html = f"""
     <div class="mobile-game-area">
-        <div class="m-table-info"><div class="m-info-spot">{sp}</div></div>
-        <div class="m-dealer-btn" style="top:{dc[0]}%; left:{dc[1]}%;">D</div>
-    """
-    for p, css in pos_map.items():
-        if p == hero: html += f'<div class="m-seat hero {css}"><div class="m-seat-label">{p}</div></div>'
-        elif p == villain: html += f'<div class="m-seat villain {css}"><div class="m-seat-label">{p}</div><div class="m-seat-amount">{villain_bet}</div></div>'
-        else: html += f'<div class="m-seat {css}"><div class="m-seat-label">{p}</div></div>'
-        
-    if hero_bet:
-        html += f'<div style="position:absolute; bottom:25%; left:50%; transform:translate(-50%, 0); display:flex; flex-direction:column; align-items:center; z-index:15;"><div class="m-chip">$</div><div class="m-bet-txt">{hero_bet}</div></div>'
-        
-    html += f"""
-        <div class="m-cards-container">
-            <div class="m-card {c1_c}">{c1}{c1_s}</div>
-            <div class="m-card {c2_c}">{c2}{c2_s}</div>
+        <div class="mob-info"><div class="mob-info-src">{sc}</div><div class="mob-info-spot">{sp}</div></div>
+        {opp_html} {chips_html}
+        <div class="hero-mob">
+            <div class="card-mob"><div class="tl-mob {c1}">{h_val[0]}<br>{s1}</div><div class="c-mob {c1}">{s1}</div></div>
+            <div class="card-mob"><div class="tl-mob {c2}">{h_val[1]}<br>{s2}</div><div class="c-mob {c2}">{s2}</div></div>
+            <div class="rng-badge">{rng}</div>
         </div>
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
 
+    if is_defense:
+        st.markdown('<div class="rng-hint">📉 0..Freq → Action | 📈 Freq..100 → Fold</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="mobile-controls">', unsafe_allow_html=True)
     if not st.session_state.srs_mode:
-        st.markdown('<div class="mobile-controls">', unsafe_allow_html=True)
-        is_or = "open raise" in sc.lower()
-        if is_or:
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown('<div class="fold-btn">', unsafe_allow_html=True)
-                if st.button("FOLD", use_container_width=True):
-                    corr = (correct_act == "FOLD")
-                    st.session_state.last_error = not corr
-                    st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
-                    utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
-                    st.session_state.srs_mode = True; st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-            with c2:
-                st.markdown('<div class="open-raise-btn">', unsafe_allow_html=True)
-                if st.button("RAISE", use_container_width=True):
-                    corr = (correct_act == "RAISE")
-                    st.session_state.last_error = not corr
-                    st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
-                    utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
-                    st.session_state.srs_mode = True; st.rerun()
-                st.markdown('<script>parent.document.querySelectorAll("div[data-testid=\'column\'] button")[1].classList.add("open-raise-btn");</script>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-        else:
+        if is_defense:
             c1, c2, c3 = st.columns(3)
             with c1:
-                st.markdown('<div class="fold-btn">', unsafe_allow_html=True)
-                if st.button("FOLD", use_container_width=True):
+                if st.button("FOLD", key="f", use_container_width=True):
                     corr = (correct_act == "FOLD")
                     st.session_state.last_error = not corr
                     st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
                     utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
                     st.session_state.srs_mode = True; st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown('<script>parent.document.querySelectorAll("div[data-testid=\'column\'] button")[0].classList.add("fold-btn");</script>', unsafe_allow_html=True)
             with c2:
-                st.markdown('<div class="call-btn">', unsafe_allow_html=True)
-                if st.button("CALL", use_container_width=True):
+                if st.button("CALL", key="c", use_container_width=True):
                     corr = (correct_act == "CALL")
                     st.session_state.last_error = not corr
                     st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
                     utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
                     st.session_state.srs_mode = True; st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown('<script>parent.document.querySelectorAll("div[data-testid=\'column\'] button")[1].classList.add("call-btn");</script>', unsafe_allow_html=True)
             with c3:
-                st.markdown('<div class="raise-btn">', unsafe_allow_html=True)
-                if st.button("RAISE", use_container_width=True):
+                if st.button("RAISE", key="r", use_container_width=True):
                     corr = (correct_act == "RAISE")
                     st.session_state.last_error = not corr
                     st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
                     utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
                     st.session_state.srs_mode = True; st.rerun()
                 st.markdown('<script>parent.document.querySelectorAll("div[data-testid=\'column\'] button")[2].classList.add("raise-btn");</script>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("FOLD", key="f", use_container_width=True):
+                    corr = (correct_act == "FOLD")
+                    st.session_state.last_error = not corr
+                    st.session_state.msg = "✅ Correct" if corr else "❌ Err"
+                    utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
+                    st.session_state.srs_mode = True; st.rerun()
+                st.markdown('<script>parent.document.querySelectorAll("div[data-testid=\'column\'] button")[0].classList.add("fold-btn");</script>', unsafe_allow_html=True)
+            with c2:
+                if st.button("RAISE", key="r", use_container_width=True):
+                    corr = (correct_act == "RAISE")
+                    st.session_state.last_error = not corr
+                    st.session_state.msg = "✅ Correct" if corr else "❌ Err"
+                    utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
+                    st.session_state.srs_mode = True; st.rerun()
+                st.markdown('<script>parent.document.querySelectorAll("div[data-testid=\'column\'] button")[1].classList.add("open-raise-btn");</script>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     if st.session_state.srs_mode:
         if st.session_state.last_error:
             st.error(st.session_state.msg)
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                if st.button("FOLD", key="e_f", use_container_width=True):
-                    corr = (correct_act == "FOLD")
-                    st.session_state.last_error = not corr
-                    st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
-                    utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
-                    st.rerun()
-            with c2:
-                if st.button("CALL", key="e_c", use_container_width=True):
-                    corr = (correct_act == "CALL")
-                    st.session_state.last_error = not corr
-                    st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
-                    utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
-                    st.rerun()
-            with c3:
-                if st.button("RAISE", key="e_r", use_container_width=True):
-                    corr = (correct_act == "RAISE")
-                    st.session_state.last_error = not corr
-                    st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
-                    utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
-                    st.rerun()
             with st.expander(f"Show Range ({correct_act})", expanded=True):
                 st.markdown(utils.render_range_matrix(data, st.session_state.hand), unsafe_allow_html=True)
         else:
@@ -265,10 +280,10 @@ def show():
             with st.expander(f"🔍 View Range ({correct_act})", expanded=False):
                 st.markdown(utils.render_range_matrix(data, st.session_state.hand), unsafe_allow_html=True)
         
-            st.markdown('<div class="mobile-controls srs-container">', unsafe_allow_html=True)
-            s1, s2, s3 = st.columns(3)
-            k = f"{src}_{sc}_{sp}".replace(" ","_")
-            if s1.button("HARD", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'hard'); st.session_state.hand = None; st.session_state.srs_mode = False; st.rerun()
-            if s2.button("NORM", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'normal'); st.session_state.hand = None; st.session_state.srs_mode = False; st.rerun()
-            if s3.button("EASY", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'easy'); st.session_state.hand = None; st.session_state.srs_mode = False; st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="mobile-controls srs-container">', unsafe_allow_html=True)
+        s1, s2, s3 = st.columns(3)
+        k = f"{src}_{sc}_{sp}".replace(" ","_")
+        if s1.button("HARD", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'hard'); st.session_state.hand = None; st.rerun()
+        if s2.button("NORM", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'normal'); st.session_state.hand = None; st.rerun()
+        if s3.button("EASY", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'easy'); st.session_state.hand = None; st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
