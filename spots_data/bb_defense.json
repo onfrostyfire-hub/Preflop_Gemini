@@ -17,7 +17,7 @@
       "stats": { "3bet": "12%", "Call": "31%", "Fold": "57%" },
       "ranges": {
         "source": "ALL",
-        "call": "99:0.25,88:0.5,66,55,44,33,22,AJo:0.75,ATo,A9,A8,A7,A6s,A5o,A4o,A3s,A2s,KQo:0.75,KJo,KTs:0.5,KTo,K9s:0.5,K9o,K8s:0.5,K7s:0.5,K6s:0.5,K5s,K4s,K3s,K2s,QJo,QTs:0.5,QTo,Q9s:0.5,Q9o,Q8s:0.5,Q7s,Q6s,Q5s,Q4s,Q3s,Q2s,JTo,J9s:0.5,J9o,J8s:0.5,J7s,J6s,J5s,J4s,J3s,J2s,T9o,T8:0.5,T7s,T6s,T5s:0.5,98o:0.5,97s:0.5,96s,87o:0.5,86s,85s,75s,74s,64s,63s,53s,52s,43s,42s",
+        "call": "99:0.25,88:0.5,77,66,55,44,33,22,AJo:0.75,ATo,A9,A8,A7,A6s,A5o,A4o,A3s,A2s,KQo:0.75,KJo,KTs:0.5,KTo,K9s:0.5,K9o,K8s:0.5,K7s:0.5,K6s:0.5,K5s,K4s,K3s,K2s,QJo,QTs:0.5,QTo,Q9s:0.5,Q9o,Q8s:0.5,Q7s,Q6s,Q5s,Q4s,Q3s,Q2s,JTo,J9s:0.5,J9o,J8s:0.5,J7s,J6s,J5s,J4s,J3s,J2s,T9o,T8:0.5,T7s,T6s,T5s:0.5,98o:0.5,97s:0.5,96s,87o:0.5,86s,85s,75s,74s,64s,63s,53s,52s,43s,42s",
         "3bet": "AA,KK,QQ,JJ,TT,99,88:0.5,AK,AQ,AJs,AJo:0.25,ATs,A5s,A4s,KQs,KQo:0.25,KJs,KTs:0.5,K9s:0.5,K8s:0.5,K7s:0.5,K6s:0.5,QJs,QTs:0.5,Q9s:0.5,Q8s:0.5,JTs,J9s:0.5,J8s:0.5,T9s,T8s:0.5,98s,97s:0.5,87s,76s,65s,54s",
         "training": "AJo,AT,A9o,A8o,A7o,A8s,A7s,A6o,A5,A4,A3,A2,KQo,KJ,KT,K9o,K8o,QJo,QTo,Q9,JTo,J9,J8s,J7s,J6s,J5s,J4s,J3s,J2s,T9o,T8,T7s,T6s,T5s,T4s,T3s,98o,97s,96s,95s,94s,87o,85s,84s,74s,73s,63s,62s,52s,42s,32s"
       }
