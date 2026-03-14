@@ -33,40 +33,62 @@ def show():
         .call-btn button { background: #28a745; color: white; }
         .raise-btn button { background: #d63384; color: white; }
         .open-raise-btn button { background: #2e7d32; color: white; }
+        .chip { width: 20px; height: 20px; background: radial-gradient(circle, #ffeb3b, #fbc02d); border-radius: 50%; color: #000; font-weight: bold; font-size: 11px; display: flex; justify-content: center; align-items: center; z-index: 15; position: absolute; border: 1px solid #bfa006; }
+        .bet-txt { font-size: 12px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; background: rgba(0,0,0,0.6); padding: 1px 4px; border-radius: 4px; margin-top: -5px; z-index: 20; }
+        .hero-panel { position: absolute; bottom: -45px; left: 50%; transform: translateX(-50%); background: #212529; border: 1px solid #495057; border-radius: 8px; padding: 5px 15px; display: flex; gap: 10px; z-index: 20; }
     </style>
     """, unsafe_allow_html=True)
 
     ranges_db = utils.load_ranges()
-    if not ranges_db: st.error("База пуста"); return
+    if not ranges_db: st.error("База ренджей пуста."); return
     
-    saved_settings = utils.load_user_settings()
+    scenario_map = {}
+    for src, sc_dict in ranges_db.items():
+        for sc, sp_dict in sc_dict.items():
+            mapped_sc = sc
+            sc_lower = sc.lower()
+            if "def" in sc_lower and "3bet" in sc_lower: mapped_sc = "Def vs 3bet"
+            elif "3bet" in sc_lower: mapped_sc = "3bet"
+            elif "pfr" in sc_lower or "bbvsbu" in sc_lower or "bb def" in sc_lower: mapped_sc = "BB def vs PFR"
+            elif "open raise" in sc_lower: mapped_sc = "Open Raise"
+            
+            if mapped_sc not in scenario_map: scenario_map[mapped_sc] = []
+            for sp in sp_dict.keys():
+                scenario_map[mapped_sc].append((sp, f"{src}|{sc}|{sp}"))
     
-    with st.sidebar.expander("⚙️ Фильтры", expanded=False):
-        all_src = list(ranges_db.keys())
-        def_src = [s for s in saved_settings.get("sources", all_src) if s in all_src]
-        sel_src = st.multiselect("Источники", all_src, default=def_src)
-        
-        all_scenarios = ["Open Raise", "BB def vs PFR", "Def vs 3bet", "SB vs BB", "SQZ", "vs SQZ", "3bet"]
-        def_sc = [s for s in saved_settings.get("scenarios", all_scenarios) if s in all_scenarios]
-        sel_sc = st.multiselect("Сценарии", all_scenarios, default=def_sc)
-        
-        if sel_src != saved_settings.get("sources") or sel_sc != saved_settings.get("scenarios"):
-            utils.save_user_settings({"sources": sel_src, "scenarios": sel_sc})
+    all_scenarios = ["Open Raise", "BB def vs PFR", "Def vs 3bet", "3bet"]
+    all_scenarios = [s for s in all_scenarios if s in scenario_map]
 
-    pool = utils.get_filtered_pool(ranges_db, sel_src, sel_sc)
-    if not pool: st.info("Нет спотов"); return
+    with st.sidebar:
+        st.header("⚙️ Фильтры")
+        saved = utils.load_user_settings()
+        
+        saved_sc = [s for s in saved.get("scenarios", []) if s in all_scenarios]
+        sel_sc = st.multiselect("Сценарий", all_scenarios, default=saved_sc if saved_sc else (all_scenarios[:1] if all_scenarios else []))
+        
+        sel_spots_keys = []
+        for sc in sel_sc:
+            opts = scenario_map[sc]
+            opts_names = [o[0] for o in opts]
+            saved_sp = [s for s in saved.get("spots", []) if s in opts_names]
+            sel = st.multiselect(sc, opts_names, default=saved_sp if saved_sp else opts_names)
+            sel_spots_keys.extend([o[1] for o in opts if o[0] in sel])
+            
+        if sel_sc != saved.get("scenarios") or [k.split('|')[-1] for k in sel_spots_keys] != saved.get("spots"):
+            utils.save_user_settings({"scenarios": sel_sc, "spots": [k.split('|')[-1] for k in sel_spots_keys]})
+
+    if not sel_spots_keys: st.info("Выбери споты."); return
 
     if "srs_mode" not in st.session_state:
         st.session_state.srs_mode = False
         st.session_state.hand = None
         st.session_state.spot_key = None
-        st.session_state.last_error = False
         st.session_state.msg = ""
 
     def get_next():
         srs = utils.load_srs_data()
         w_pool = []
-        for pk in pool:
+        for pk in sel_spots_keys:
             src, sc, sp = pk.split('|')
             d = ranges_db[src][sc][sp]
             r = d.get("ranges", {})
@@ -96,15 +118,26 @@ def show():
     src, sc, sp = st.session_state.spot_key.split('|')
     data = ranges_db[src][sc][sp]
     ranges = data.get("ranges", data)
-    r_call = ranges.get("call", ranges.get("Call", ""))
+    
     r_raise = ranges.get("4bet", ranges.get("3bet", ranges.get("Raise", "")))
-    w_call = utils.get_weight(st.session_state.hand, r_call)
-    w_raise = utils.get_weight(st.session_state.hand, r_raise)
-
-    if w_raise > 0 and w_call > 0: correct_act = "MIX"
-    elif w_raise > 0: correct_act = "RAISE"
-    elif w_call > 0: correct_act = "CALL"
-    else: correct_act = "FOLD"
+    r_call = ranges.get("call", ranges.get("Call", ""))
+    
+    w_raise_val = utils.get_weight(st.session_state.hand, r_raise)
+    w_c = utils.get_weight(st.session_state.hand, r_call)
+    
+    rng = random.uniform(0, 100)
+    w = w_raise_val + w_c
+    if w == 0:
+        correct_act = "FOLD"
+    elif w < 100 and rng > w:
+        correct_act = "FOLD"
+    else:
+        rng = random.uniform(0, w)
+        if rng < w_raise_val: correct_act = "RAISE"
+        elif rng < (w_raise_val + w_c): correct_act = "CALL"
+        else:
+            if w > 0: correct_act = "RAISE"
+            else: correct_act = "FOLD"
 
     col_left, col_right = st.columns([1.5, 1])
 
@@ -132,9 +165,12 @@ def show():
             <div class="dealer-btn" style="top:{dc[0]}%; left:{dc[1]}%;">D</div>
         """
         for p, css in pos_map.items():
-            if p == hero: html += f'<div class="seat hero {css}"><div class="seat-label">{p}</div><div class="seat-amount">{hero_bet}</div></div>'
+            if p == hero: html += f'<div class="seat hero {css}"><div class="seat-label">{p}</div></div>'
             elif p == villain: html += f'<div class="seat villain {css}"><div class="seat-label">{p}</div><div class="seat-amount">{villain_bet}</div></div>'
             else: html += f'<div class="seat {css}"><div class="seat-label">{p}</div></div>'
+            
+        if hero_bet:
+            html += f'<div style="position:absolute; bottom:25%; left:50%; transform:translate(-50%, 0); display:flex; flex-direction:column; align-items:center; z-index:15;"><div class="chip">$</div><div class="bet-txt">{hero_bet}</div></div>'
             
         html += f"""
             <div class="cards-container">
@@ -153,16 +189,16 @@ def show():
                 if st.button("FOLD", use_container_width=True):
                     corr = (correct_act == "FOLD")
                     st.session_state.last_error = not corr
-                    st.session_state.msg = "✅ ВЕРНО" if corr else f"❌ ОШИБКА. Надо: {correct_act}"
+                    st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
                     utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
                     st.session_state.srs_mode = True; st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
             with c2:
                 st.markdown('<div class="call-btn">', unsafe_allow_html=True)
                 if st.button("CALL", use_container_width=True):
-                    corr = (correct_act in ["CALL", "MIX"])
+                    corr = (correct_act == "CALL")
                     st.session_state.last_error = not corr
-                    st.session_state.msg = "✅ ВЕРНО" if corr else f"❌ ОШИБКА. Надо: {correct_act}"
+                    st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
                     utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
                     st.session_state.srs_mode = True; st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -170,9 +206,9 @@ def show():
                 btn_class = "open-raise-btn" if "open raise" in sc.lower() else "raise-btn"
                 st.markdown(f'<div class="{btn_class}">', unsafe_allow_html=True)
                 if st.button("RAISE", use_container_width=True):
-                    corr = (correct_act in ["RAISE", "MIX"])
+                    corr = (correct_act == "RAISE")
                     st.session_state.last_error = not corr
-                    st.session_state.msg = "✅ ВЕРНО" if corr else f"❌ ОШИБКА. Надо: {correct_act}"
+                    st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
                     utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
                     st.session_state.srs_mode = True; st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -181,14 +217,33 @@ def show():
             if "open raise" in sc.lower():
                 st.markdown('<script>parent.document.querySelectorAll("div[data-testid=\'column\'] button")[2].classList.add("open-raise-btn");</script>', unsafe_allow_html=True)
         else:
-            if st.session_state.last_error: st.error(st.session_state.msg)
-            else: st.success(st.session_state.msg)
-            
-            s1, s2, s3 = st.columns(3)
-            k = f"{src}_{sc}_{sp}".replace(" ","_")
-            if s1.button("HARD", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'hard'); st.session_state.hand = None; st.session_state.srs_mode = False; st.rerun()
-            if s2.button("NORM", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'normal'); st.session_state.hand = None; st.session_state.srs_mode = False; st.rerun()
-            if s3.button("EASY", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'easy'); st.session_state.hand = None; st.session_state.srs_mode = False; st.rerun()
+            if st.session_state.last_error:
+                st.error(st.session_state.msg)
+                if st.button("FOLD", key="e_f", use_container_width=True):
+                    corr = (correct_act == "FOLD")
+                    st.session_state.last_error = not corr
+                    st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
+                    utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
+                    st.rerun()
+                if st.button("CALL", key="e_c", use_container_width=True):
+                    corr = (correct_act == "CALL")
+                    st.session_state.last_error = not corr
+                    st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
+                    utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
+                    st.rerun()
+                if st.button("RAISE", key="e_r", use_container_width=True):
+                    corr = (correct_act == "RAISE")
+                    st.session_state.last_error = not corr
+                    st.session_state.msg = f"✅ Correct" if corr else f"❌ Err! RNG {rng} -> {correct_act}"
+                    utils.save_to_history({"Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Spot": sp, "Hand": f"{h_val}", "Result": int(corr), "CorrectAction": correct_act})
+                    st.rerun()
+            else:
+                st.success(st.session_state.msg)
+                s1, s2, s3 = st.columns(3)
+                k = f"{src}_{sc}_{sp}".replace(" ","_")
+                if s1.button("HARD", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'hard'); st.session_state.hand = None; st.session_state.srs_mode = False; st.rerun()
+                if s2.button("NORM", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'normal'); st.session_state.hand = None; st.session_state.srs_mode = False; st.rerun()
+                if s3.button("EASY", use_container_width=True): utils.update_srs_smart(k, st.session_state.hand, 'easy'); st.session_state.hand = None; st.session_state.srs_mode = False; st.rerun()
 
     with col_right:
         if st.session_state.srs_mode:
