@@ -185,15 +185,6 @@ def load_ranges():
                     st.error(f"Ошибка чтения {file}: {e}")
     return db
 
-def get_filtered_pool(ranges_db, selected_sources, selected_scenarios):
-    pool = []
-    for src in selected_sources:
-        for sc in selected_scenarios:
-            if sc not in ranges_db.get(src, {}): continue
-            for sp in ranges_db[src][sc]:
-                pool.append(f"{src}|{sc}|{sp}")
-    return pool
-
 ALL_HANDS = []
 for i, r1 in enumerate(RANKS):
     for j, r2 in enumerate(RANKS):
